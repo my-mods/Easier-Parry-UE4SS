@@ -6,13 +6,19 @@ Makes parrying more forgiving in *The Blood of Dawnwalker* by multiplying Coen's
 
 - **2× timing window** by default, configurable from **0.1× to 50×**.
 - Uses the game's current, difficulty-adjusted timing as its baseline.
-- Automatically reapplies when the player or parry attribute is recreated.
+- Caches the player and parry attribute; healthy checks do not scan game objects.
+- Checks once per second by default and writes only when the value changes.
+- Reacquires invalid player/attribute references after loading or recreation.
 
 ## Installation
 
 Requires a Dawnwalker-compatible **UE4SS 3.x** installation.
 
 Download the mod ZIP from [Releases](https://github.com/my-mods/Easier-Parry-UE4SS/releases), install it through Vortex, then enable and deploy.
+
+For updates, close the game and replace/reinstall the existing mod entry from the new ZIP, then deploy through Vortex. Use the UE4SS (Lua mods) type. Keep one enabled Easier Parry entry.
+
+The ZIP includes the full EasierParryUE4SS.ini. Back up custom preferences before replacement and reapply them afterward; settings are not automatically merged. The new default pollMilliseconds is 1000.
 
 To uninstall, disable/remove the mod in Vortex, deploy, and restart the game.
 
@@ -24,7 +30,7 @@ Edit `EasierParryUE4SS/Scripts/EasierParryUE4SS.ini`:
 [General]
 enabled = true
 factor = 2.0
-pollMilliseconds = 500
+pollMilliseconds = 1000
 debugLogging = false
 ```
 

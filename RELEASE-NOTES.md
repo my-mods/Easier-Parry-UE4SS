@@ -1,15 +1,21 @@
-# Easier Parry - UE4SS v1.0.1
+# Easier Parry - UE4SS v1.0.2
 
-The ZIP now generates vortex_override_instructions.json from mod.manifest, so Vortex sets the display name, version, and description during installation. Runtime payloads and file destinations are unchanged.
+The maintenance loop previously searched for the player every 500 ms, even after the parry attribute was found. This update caches the player and CharDevAttributeSet. Healthy ticks only validate cached objects and check the value; global searches run only when the player cache is absent or invalid, and writes run only when needed. The default interval is now 1000 ms.
 
-Replace/reinstall the updated ZIP through Vortex using the existing mod entry, then deploy. Redeployment alone cannot read new archive metadata. This does not provide automatic update discovery or merge duplicate Vortex entries.
+Repeated `easierparry on` commands also preserve the original baseline instead of multiplying an already modified value.
 
-Archive filename: Easier-Parry-UE4SS-v1.0.0-Vortex.zip
+## Update through Vortex
 
-Validation: ZIP allowlist, manifest/attribute agreement, UTF-8 without BOM, installed Vortex attribute merge, and installer destination planning. Lua and INI hashes match the previous local release. 
+Close the game, back up custom INI preferences, and replace/reinstall the existing Easier Parry entry using `Easier-Parry-UE4SS.zip`. Select **UE4SS (Lua mods)** if prompted, then deploy and restart. Keep one enabled entry; this version's `EasierParryUE4SS/Scripts/main.lua` and `EasierParryUE4SS.ini` must replace the previous files.
 
-No live Vortex installation/deployment or in-game test is performed for this packaging update. Confirm the displayed name, version, and description after reinstalling. Previous in-game acceptance checks remain applicable.
+The archive includes a full INI with `factor = 2.0` and `pollMilliseconds = 1000`. Reapply personal preferences after replacement; it does not merge them automatically. If retaining an existing INI, set `pollMilliseconds = 1000` and restart to use the new interval. Caching also works with an existing 500 ms setting.
 
-Requires Dawnwalker-compatible UE4SS 3.x. Use UE4SS (Lua mods). This package includes the full EasierParryUE4SS.ini: back up custom settings before replacement; preferences are not automatically merged. Disable/remove this mod and deploy through Vortex to uninstall. The historical v1.0.0 string in the fixed ZIP filename is retained as requested; Vortex reads the current version from archive metadata.
+The unversioned ZIP name replaces the historical `Easier-Parry-UE4SS-v1.0.0-Vortex.zip` label. Display name, internal mod ID, and runtime paths remain unchanged. Use Vortex's replacement flow for the same entry.
 
-Verified local archive: 7560 bytes; SHA-256 `410D731F7DCEAE754934D66D4D0DF7361F25CC4856D83A3BD4240E88D0C8B6DB`.
+Requires Dawnwalker-compatible UE4SS 3.x; no other mod is required. Mods that also modify `ParryWindowMultiplier` may conflict. To uninstall, disable/remove through Vortex, deploy, and restart.
+
+## Validation
+
+Lua 5.4 compilation and simulated regression checks cover steady ticks, value resets, startup without a player, delayed attributes, invalid objects during loading/player replacement, console controls, and queued game-thread work. Actual archive bytes, metadata, duplicate-file checks, and installer destination planning are checked against the installed Vortex extension. Two consecutive builds overwrite the same unversioned ZIP.
+
+Published as a prerelease pending in-game validation. These tests do not measure frame times or prove the reported stutters are eliminated. Check normal gameplay, parrying, save loading, death/reload, and player transitions after updating. Game build target remains 25129649 / CL-257186.

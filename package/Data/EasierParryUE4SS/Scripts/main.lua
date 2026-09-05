@@ -14,11 +14,12 @@ local SCRIPT_SOURCE = debug.getinfo(1, "S").source
 local config = {
     enabled = true,
     factor = 2.0,
-    pollMilliseconds = 500,
+    pollMilliseconds = 1000,
     debugLogging = false,
 }
 
 local active = nil
+local cachedPlayer = nil
 local pending = false
 local lastFailure = nil
 
@@ -207,20 +208,25 @@ local function WriteAttribute(attributeSet, base, current, kind)
 end
 
 local function FindPlayerAttributeSet()
-    local ok, player = pcall(FindFirstOf, PLAYER_CLASS)
-    if not ok or not IsLive(player) or IsDefaultObject(player) then
-        player = nil
-        local foundAll, players = pcall(FindAllOf, PLAYER_CLASS)
-        if foundAll and players ~= nil then
-            for _, candidate in pairs(players) do
-                if IsLive(candidate) and not IsDefaultObject(candidate) then
-                    player = candidate
-                    break
+    local player = cachedPlayer
+    if not IsLive(player) then
+        local ok
+        ok, player = pcall(FindFirstOf, PLAYER_CLASS)
+        if not ok or not IsLive(player) or IsDefaultObject(player) then
+            player = nil
+            local foundAll, players = pcall(FindAllOf, PLAYER_CLASS)
+            if foundAll and players ~= nil then
+                for _, candidate in pairs(players) do
+                    if IsLive(candidate) and not IsDefaultObject(candidate) then
+                        player = candidate
+                        break
+                    end
                 end
             end
         end
+        cachedPlayer = player
     end
-    if player == nil then
+    if not IsLive(player) then
         return nil, nil, "waiting for a live player"
     end
 
@@ -251,13 +257,13 @@ local function RestoreBaseline()
     active = nil
 end
 
-local function Attach(attributeSet)
+local function Attach(player, attributeSet)
     local base, current, kind, reason = ReadAttribute(attributeSet)
     if base == nil then return false, reason end
 
     active = {
         attributeSet = attributeSet,
-        identity = SafeName(attributeSet),
+        player = player,
         baselineBase = base,
         baselineCurrent = current,
         targetBase = base * config.factor,
@@ -297,20 +303,24 @@ end
 local function Poll()
     if not config.enabled then return end
 
-    local _, attributeSet, reason = FindPlayerAttributeSet()
-    if attributeSet == nil then
-        active = nil
-        RecordFailure(reason)
-        return
-    end
-
-    local identity = SafeName(attributeSet)
-    if active == nil or not IsLive(active.attributeSet) or active.identity ~= identity then
-        local attached, attachReason = Attach(attributeSet)
+    -- Global object discovery is only needed when the cache is absent or stale.
+    -- Healthy ticks validate the cached objects and read the value; no name lookups,
+    -- player resolution, reflection writes, or object-array scans are performed.
+    if active == nil or not IsLive(active.attributeSet) or not IsLive(active.player) then
+        -- A player can disappear while its attribute set is still live. Restore it
+        -- before forgetting the baseline, in case the next player shares that set.
+        RestoreBaseline()
+        local player, attributeSet, reason = FindPlayerAttributeSet()
+        if attributeSet == nil then
+            RecordFailure(reason)
+            return
+        end
+        local attached, attachReason = Attach(player, attributeSet)
         if not attached then RecordFailure(attachReason) else lastFailure = nil end
         return
     end
 
+    local attributeSet = active.attributeSet
     local base, current = ReadAttribute(attributeSet)
     if not NearlyEqual(base, active.targetBase) or not NearlyEqual(current, active.targetCurrent) then
         local repaired, repairReason = WriteAttribute(
@@ -366,7 +376,6 @@ if RegisterConsoleCommandHandler ~= nil then
 
         if command == "on" then
             config.enabled = true
-            active = nil
             Log("Enabled for this session")
             return true
         end

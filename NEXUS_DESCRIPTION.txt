@@ -37,7 +37,9 @@ recreated or the game recalculates the attribute.
 [*]2x parry timing window by default.
 [*]Configurable multiplier from 0.1x to 50x.
 [*]Preserves the live vanilla or difficulty-adjusted baseline.
-[*]Automatically reapplies after player or attribute recreation.
+[*]Caches player/attribute references and checks once per second by default.
+[*]No global object searches or redundant writes while the cache is healthy.
+[*]Reacquires invalid references after loading or recreation.
 [*]No PAK replacements or IoStore file conflicts.
 [*]Optional diagnostic logging, disabled by default.
 [*]UE4SS console commands for status, reload, toggle, and quick testing.
@@ -50,22 +52,16 @@ recreated or the game recalculates the attribute.
 [*]A working Dawnwalker-compatible UE4SS 3.x installation.
 [/list]
 
-Validated against Steam build 25129649 / Hotfix 1.0.3 / executable CL-257186.
+Targets Steam build 25129649 / executable CL-257186. The v1.0.2 performance fix has passed simulated Lua and package checks; in-game frame-time validation is pending.
 
 [b]Vortex installation[/b]
 
 Install the downloaded ZIP through Vortex, then enable and deploy it.
 
-[b]Manual installation[/b]
-
-Open the ZIP's [code]Data[/code] folder and copy [code]EasierParryUE4SS[/code]
-into:
-
-[code]The Blood of Dawnwalker\Dawnwalker\Binaries\Win64\ue4ss\Mods[/code]
-
-The final script path should be:
-
-[code]...\ue4ss\Mods\EasierParryUE4SS\Scripts\main.lua[/code]
+For updates, close the game, replace/reinstall the existing entry through Vortex,
+then deploy. Use [b]UE4SS (Lua mods)[/b] and keep one enabled Easier Parry entry.
+The ZIP replaces the full INI: back up and reapply custom preferences.
+Use [code]pollMilliseconds = 1000[/code] for the new default interval.
 
 [b]Configuration[/b]
 
@@ -75,7 +71,7 @@ Edit [code]EasierParryUE4SS\Scripts\EasierParryUE4SS.ini[/code]:
 [General]
 enabled = true
 factor = 2.0
-pollMilliseconds = 500
+pollMilliseconds = 1000
 debugLogging = false
 [/code]
 
@@ -122,9 +118,7 @@ Coen's [code]ParryWindowMultiplier[/code].
 
 [b]Uninstallation[/b]
 
-Disable or remove the mod through Vortex. For a manual installation, delete only
-the [code]EasierParryUE4SS[/code] folder from [code]ue4ss\Mods[/code], then
-restart the game.
+Disable or remove the mod through Vortex, deploy, then restart the game.
 
 [b]Credits and permissions[/b]
 
@@ -134,6 +128,11 @@ included license. No game assets are included.
 
 CHANGELOG
 ---------
+1.0.2
+- Cache player/attribute references to remove repeated healthy-tick object searches.
+- Change the default interval from 500 ms to 1000 ms.
+- Prevent repeated console on commands from compounding the multiplier.
+
 1.0.0
 - Initial release.
 - Configurable live parry-window multiplier.

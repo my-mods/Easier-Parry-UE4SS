@@ -1,5 +1,11 @@
 # Changes
 
+## 1.0.5 — 2026-09-06
+
+- Keep Nexus thumbnail, description, attribution, and listing metadata in the repository’s Nexus folder, outside the Vortex ZIP.
+- Preserve Vortex name/version/description metadata and runtime installation paths.
+- Lua and INI payloads are unchanged from v1.0.4.
+
 ## 1.0.4 — 2026-09-06
 
 - Replace the thumbnail with an official in-game sword-clash screenshot and a simple title overlay.

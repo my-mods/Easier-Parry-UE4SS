@@ -1,0 +1,33 @@
+{
+  "name": "Easier Parry - UE4SS",
+  "version": "1.0.5",
+  "game": "The Blood of Dawnwalker",
+  "nexusDomain": "thebloodofdawnwalker",
+  "summary": "Configurable runtime multiplier for Coen's parry timing window.",
+  "descriptionFile": "description.bbcode.txt",
+  "thumbnailFile": "thumbnail.png",
+  "thumbnailAltText": "Easier Parry - UE4SS title over an official in-game sword-clash screenshot.",
+  "thumbnailIsAIGenerated": false,
+  "suggestedCategory": "Gameplay",
+  "keywords": [
+    "Gameplay",
+    "Balancing",
+    "Quality of Life",
+    "Accessibility",
+    "UE4SS"
+  ],
+  "requirements": [
+    "The Blood of Dawnwalker (PC)",
+    "Dawnwalker-compatible UE4SS 3.x"
+  ],
+  "requiredMods": [
+    "UE4SS"
+  ],
+  "fileName": "Easier-Parry-UE4SS.zip",
+  "fileDisplayName": "Easier Parry - UE4SS",
+  "fileDescription": "Configurable parry timing window, doubled by default. Requires UE4SS. Install as UE4SS (Lua mods) through Vortex.",
+  "sourceUrl": "https://github.com/my-mods/Easier-Parry-UE4SS",
+  "nexusModId": null,
+  "nexusFileId": null,
+  "license": "MIT"
+}

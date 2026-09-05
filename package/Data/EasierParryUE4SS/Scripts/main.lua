@@ -409,4 +409,3 @@ Log(
     config.factor,
     config.pollMilliseconds
 )
-

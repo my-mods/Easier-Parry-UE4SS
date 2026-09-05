@@ -1,4 +1,4 @@
-EASIER PARRY - UE4SS 1.0.0
+EASIER PARRY - UE4SS 1.0.1
 ==========================
 
 Author: oOCamilleOo
@@ -96,3 +96,10 @@ uninstalling.
 LICENSE
 -------
 MIT. See LICENSE.txt. The package contains original Lua code and no game assets.
+
+VORTEX METADATA UPDATE 1.0.1
+The ZIP now generates vortex_override_instructions.json from mod.manifest, so Vortex sets the display name, version, and description during installation. Runtime payloads and file destinations are unchanged.
+
+Replace/reinstall the updated ZIP through Vortex using the existing mod entry, then deploy. Redeployment alone cannot read new archive metadata. This does not provide automatic update discovery or merge duplicate Vortex entries.
+
+Archive filename: Easier-Parry-UE4SS-v1.0.0-Vortex.zip

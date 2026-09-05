@@ -1,4 +1,5 @@
 *.zip
+package/vortex_override_instructions.json
 *.ps1
 *.psm1
 *.psd1

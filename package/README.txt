@@ -1,105 +1,42 @@
-EASIER PARRY - UE4SS 1.0.1
-==========================
+Easier Parry - UE4SS
 
-Author: oOCamilleOo
-Game: The Blood of Dawnwalker (PC)
-Validated against Steam build 25129649 / Hotfix 1.0.3 / executable CL-257186.
+Makes parrying more forgiving in The Blood of Dawnwalker by multiplying Coen's parry timing window.
 
-DESCRIPTION
------------
-Easier Parry makes defensive timing more forgiving by multiplying Coen's live
-parry-window attribute. The default is 2x, with a configurable range from 0.1x
-to 50x.
+- 2× timing window by default, configurable from 0.1× to 50×.
+- Uses the game's current, difficulty-adjusted timing as its baseline.
+- Automatically reapplies when the player or parry attribute is recreated.
 
-The mod captures the value used by the running game, including any current
-difficulty adjustment, and multiplies that baseline. It automatically applies
-again when the player is recreated or the game recalculates the attribute.
+Installation
 
-REQUIREMENT
------------
-A working Dawnwalker-compatible UE4SS 3.x installation.
+Requires a Dawnwalker-compatible UE4SS 3.x installation.
 
-VORTEX INSTALLATION
--------------------
-Install the ZIP through Vortex, then enable and deploy it.
+Download the mod ZIP from Releases: https://github.com/my-mods/Easier-Parry-UE4SS/releases, install it through Vortex, then enable and deploy.
 
-MANUAL INSTALLATION
--------------------
-Open the ZIP's Data folder and copy the EasierParryUE4SS folder into:
+To uninstall, disable/remove the mod in Vortex, deploy, and restart the game.
 
-  The Blood of Dawnwalker\Dawnwalker\Binaries\Win64\ue4ss\Mods
+Configuration
 
-The final script path should be:
+Edit EasierParryUE4SS/Scripts/EasierParryUE4SS.ini:
 
-  ...\ue4ss\Mods\EasierParryUE4SS\Scripts\main.lua
+[General]
+enabled = true
+factor = 2.0
+pollMilliseconds = 500
+debugLogging = false
 
-CONFIGURATION
--------------
-Edit:
+factor = 1.0 gives vanilla timing; 2.0 doubles the window. Use easierparry reload in the UE4SS console after changing the factor or enabled setting. Restart the game after changing pollMilliseconds.
 
-  EasierParryUE4SS\Scripts\EasierParryUE4SS.ini
+Console commands
 
-Default settings:
+- easierparry status — show the baseline and current timing.
+- easierparry reload — reload the INI.
+- easierparry off / easierparry on — toggle the mod for this session.
+- easierparry 3 — use a 3× multiplier for this session without saving it.
 
-  [General]
-  enabled = true
-  factor = 2.0
-  pollMilliseconds = 500
-  debugLogging = false
+To check that the mod is active, load a save and look for [EasierParryUE4SS] Applied in ue4ss/UE4SS.log.
 
-Examples:
-  factor = 1.0    vanilla timing
-  factor = 1.5    50 percent more time
-  factor = 2.0    twice the timing window
-  factor = 3.0    three times the timing window
+Compatibility
 
-Factor and enabled changes can be reloaded through the UE4SS console. Restart
-the game after changing pollMilliseconds.
+Targets Steam build 25129649 / CL-257186. Replaces no game assets; may conflict with other mods that change ParryWindowMultiplier.
 
-CONSOLE COMMANDS
-----------------
-  easierparry status     show the captured baseline and current target
-  easierparry reload     reload the INI and reapply it
-  easierparry off        restore the captured baseline for this session
-  easierparry on         enable the mod for this session
-  easierparry 3          use a 3x factor for this session without saving it
-
-LOGGING
--------
-The mod always writes one short message when its script loads and another when
-it successfully applies to the player. These messages make installation issues
-easy to identify without producing continuous log noise.
-
-Additional diagnostic and reapply messages are optional and disabled by
-default. Set debugLogging = true only when troubleshooting.
-
-To confirm operation, load a save and open:
-
-  The Blood of Dawnwalker\Dawnwalker\Binaries\Win64\ue4ss\UE4SS.log
-
-Look for lines beginning with [EasierParryUE4SS], including:
-
-  Applied x2.000: ParryWindowMultiplier 1.0000/1.0000 -> 2.0000/2.0000
-
-COMPATIBILITY
--------------
-Easier Parry replaces no packaged game assets and therefore creates no PAK or
-IoStore file conflicts. It may conflict with another runtime mod that
-continuously changes Coen's ParryWindowMultiplier.
-
-UNINSTALLATION
---------------
-Remove or disable Easier Parry - UE4SS through Vortex. For a manual installation,
-delete only the EasierParryUE4SS folder from ue4ss\Mods. Restart the game after
-uninstalling.
-
-LICENSE
--------
-MIT. See LICENSE.txt. The package contains original Lua code and no game assets.
-
-VORTEX METADATA UPDATE 1.0.1
-The ZIP now generates vortex_override_instructions.json from mod.manifest, so Vortex sets the display name, version, and description during installation. Runtime payloads and file destinations are unchanged.
-
-Replace/reinstall the updated ZIP through Vortex using the existing mod entry, then deploy. Redeployment alone cannot read new archive metadata. This does not provide automatic update discovery or merge duplicate Vortex entries.
-
-Archive filename: Easier-Parry-UE4SS-v1.0.0-Vortex.zip
+Created by oOCamilleOo. MIT license: LICENSE.txt.

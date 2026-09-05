@@ -1,5 +1,11 @@
 # Changes
 
+## 1.0.3 — 2026-09-05
+
+- Include the full Nexus description, existing thumbnail, changelog, and release notes in the Vortex ZIP.
+- Preserve Vortex name/version/description metadata and the existing runtime paths.
+- Lua and INI payloads are unchanged from v1.0.2. The performance fix remains pending in-game validation.
+
 ## 1.0.2 — 2026-09-05
 
 - Remove repeated global player searches and object-name resolution from healthy maintenance ticks by caching the player and CharDevAttributeSet.

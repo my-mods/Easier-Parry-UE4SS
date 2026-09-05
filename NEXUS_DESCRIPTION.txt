@@ -128,6 +128,10 @@ included license. No game assets are included.
 
 CHANGELOG
 ---------
+1.0.3
+- Include full Nexus description, thumbnail, changelog, and release notes in the ZIP.
+- Lua and INI unchanged from v1.0.2.
+
 1.0.2
 - Cache player/attribute references to remove repeated healthy-tick object searches.
 - Change the default interval from 500 ms to 1000 ms.

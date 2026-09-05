@@ -16,6 +16,8 @@ Requires a Dawnwalker-compatible **UE4SS 3.x** installation.
 
 Download the mod ZIP from [Releases](https://github.com/my-mods/Easier-Parry-UE4SS/releases), install it through Vortex, then enable and deploy.
 
+The ZIP also includes the full Nexus description, thumbnail under `Nexus Assets`, changelog, and release notes.
+
 For updates, close the game and replace/reinstall the existing mod entry from the new ZIP, then deploy through Vortex. Use the UE4SS (Lua mods) type. Keep one enabled Easier Parry entry.
 
 The ZIP includes the full EasierParryUE4SS.ini. Back up custom preferences before replacement and reapply them afterward; settings are not automatically merged. The new default pollMilliseconds is 1000.

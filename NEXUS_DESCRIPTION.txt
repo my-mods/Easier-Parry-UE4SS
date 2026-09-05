@@ -124,7 +124,9 @@ Disable or remove the mod through Vortex, deploy, then restart the game.
 
 Created by [b]oOCamilleOo[/b]. Licensed under MIT. You may inspect, modify,
 translate, bundle, and redistribute the Lua source with attribution and the
-included license. No game assets are included.
+included license. No runtime game assets are included. The promotional thumbnail
+uses an official in-game screenshot, copyright Rebel Wolves and Bandai Namco
+Entertainment; that imagery is not covered by the mod's MIT license.
 
 CHANGELOG
 ---------

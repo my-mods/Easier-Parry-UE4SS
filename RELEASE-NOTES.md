@@ -1,8 +1,6 @@
-# Easier Parry - UE4SS v1.0.3
+# Easier Parry - UE4SS v1.0.4
 
-The Vortex ZIP now includes the full `NEXUS_DESCRIPTION.txt`, the existing `Nexus Assets/Easier-Parry-UE4SS-Thumbnail.png`, `CHANGELOG.md`, and these release notes. The README, license, manifest, and Vortex display name/version/description metadata remain included. The thumbnail is provided as a file; automatic thumbnail display in Vortex is not configured.
-
-Lua and INI bytes are unchanged from v1.0.2, retaining cached player/attribute references, the 1000 ms default interval, and the repeated-on fix. This release only updates packaging and documentation.
+The thumbnail now uses an official in-game sword-clash screenshot with a simple title overlay. Screenshot attribution is included in `Nexus Assets/THUMBNAIL-SOURCE.md`. Lua and INI payloads are unchanged from v1.0.3. This is a promotional-image update; installing it does not change gameplay.
 
 ## Installation and updates
 

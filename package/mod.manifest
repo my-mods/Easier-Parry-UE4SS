@@ -5,7 +5,7 @@
     <modid>EasierParryUE4SS</modid>
     <description>Configurable runtime multiplier for Coen's parry timing window.</description>
     <author>oOCamilleOo</author>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <created_on>2026-09-05</created_on>
   </info>
   <supports>

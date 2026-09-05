@@ -1,5 +1,10 @@
 # Changes
 
+## 1.0.4 — 2026-09-06
+
+- Replace the thumbnail with an official in-game sword-clash screenshot and a simple title overlay.
+- Include screenshot source attribution. Lua and INI payloads are unchanged.
+
 ## 1.0.3 — 2026-09-05
 
 - Include the full Nexus description, existing thumbnail, changelog, and release notes in the Vortex ZIP.

@@ -265,10 +265,97 @@ local function IsDefaultObject(object)
     return string.find(SafeName(object), "Default__", 1, true) ~= nil
 end
 
--- GA_Input_CombatDodge calls this reflected native function before GA_Dodge
--- performs its usual activation/state/cost checks. No input keys are hardcoded.
+-- Guard release belongs only to the synchronous native dodge request. Restore
+-- its held intent on return, including failed attempts; the native setter still
+-- enforces combat-state eligibility. Never retain player objects between requests.
 local dodgeHookInstalled = false
-local dodgeHookIds = nil
+local dodgeHookIds = {}
+local dodgeFrames, dodgeOverflow = {}, 0
+local ownGuardWrite = nil
+local dodgeWarnings = {}
+local function DodgeWarning(phase, reason)
+    if dodgeWarnings[phase] then return end
+    dodgeWarnings[phase] = true
+    Log("WARNING: dodge guard %s failed: %s", phase, tostring(reason))
+end
+
+local function SameObject(object, address)
+    return IsLive(object) and object:GetAddress() == address
+end
+
+local function WriteGuard(frame, value)
+    -- Consume this marker in the setter's pre-hook, rather than suppressing the
+    -- entire call: a reentrant release from the game must still win.
+    ownGuardWrite = frame.address
+    local ok, reason = pcall(function() frame.combat:SetDesiredBlockState(value) end)
+    ownGuardWrite = nil
+    if not ok then error(reason) end
+end
+
+local function ObserveGuard(context)
+    if #dodgeFrames == 0 then return end
+    local ok, reason = pcall(function()
+        local combat = context and context:get()
+        if not IsLive(combat) then return end
+        local address = combat:GetAddress()
+        if ownGuardWrite == address then ownGuardWrite = nil; return end
+        for _, frame in ipairs(dodgeFrames) do
+            if frame.address == address then frame.changed = true end
+        end
+    end)
+    if not ok then
+        -- An unreadable intervening write cannot safely be overwritten.
+        for _, frame in ipairs(dodgeFrames) do frame.changed = true end
+        DodgeWarning("observation", reason)
+    end
+end
+
+local function BeforeDodge(context)
+    -- Bound even pathological recursive requests, while keeping pre/post pairs.
+    if #dodgeFrames >= 8 then dodgeOverflow = dodgeOverflow + 1; return end
+    local frame = {}
+    dodgeFrames[#dodgeFrames + 1] = frame
+    if not dodgeHookInstalled or not config.enabled or not config.dodgeInterruptsGuard then return end
+    local ok, reason = pcall(function()
+        local combat = context and context:get()
+        if not IsLive(combat) then return end
+        local player = combat:GetCharacter()
+        -- Possession excludes NPCs, remote players and default objects without
+        -- constructing full object names. Cache ownership for this call only.
+        if not IsLive(player) or not player:IsPlayerControlled() or not player:IsLocallyControlled()
+            or not combat:IsAlive() or not combat:IsBlocking() or not combat:WantsToBlock() then return end
+        local controller, world = player:GetController(), player:GetWorld()
+        if not IsLive(controller) or not IsLive(world) then return end
+        frame.combat, frame.player = combat, player
+        frame.address, frame.playerAddress = combat:GetAddress(), player:GetAddress()
+        frame.controllerAddress, frame.worldAddress = controller:GetAddress(), world:GetAddress()
+        -- Record before writing so a setter error after mutation still gets cleanup.
+        frame.restore = true
+        WriteGuard(frame, false)
+    end)
+    if not ok then DodgeWarning("release", reason) end
+    -- Return nothing: never replace native dodge eligibility or its result.
+end
+
+local function AfterDodge(context)
+    if dodgeOverflow > 0 then dodgeOverflow = dodgeOverflow - 1; return end
+    local frame = dodgeFrames[#dodgeFrames]
+    dodgeFrames[#dodgeFrames] = nil
+    if not frame or not frame.restore or frame.changed then return end
+    local ok, reason = pcall(function()
+        local combat = context and context:get()
+        if not SameObject(combat, frame.address) or not IsLive(frame.combat)
+            or not SameObject(combat:GetCharacter(), frame.playerAddress) then return end
+        local player = frame.player
+        if not IsLive(player) or not player:IsPlayerControlled() or not player:IsLocallyControlled()
+            or not SameObject(player:GetController(), frame.controllerAddress)
+            or not SameObject(player:GetWorld(), frame.worldAddress) or not combat:IsAlive() then return end
+        if not combat:WantsToBlock() then WriteGuard(frame, true) end
+    end)
+    if not ok then DodgeWarning("restore", reason) end
+    -- All cached references expire here. No timer, delayed work or input polling.
+end
+
 local function EnsureDodgeHook()
     if dodgeHookInstalled then return true end
     if not config.dodgeInterruptsGuard then return false end
@@ -277,28 +364,14 @@ local function EnsureDodgeHook()
         return false
     end
     local ok, reason = pcall(function()
-        local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", function(context)
-            if not config.enabled or not config.dodgeInterruptsGuard then return end
-            local released, failure = pcall(function()
-                -- Only hook parameters are wrappers. Reflected UObject/struct values
-                -- must not be probed for get(): that becomes an Unreal property lookup.
-                if context == nil then return end
-                local combat = context:get()
-                if not IsLive(combat) or IsDefaultObject(combat) then return end
-                local player = combat:GetCharacter()
-                -- Resolve possession on every dodge request. Never retain player objects
-                -- across loads, death, or possession changes; never alter an NPC's guard.
-                if not IsLive(player) or IsDefaultObject(player)
-                    or not player:IsPlayerControlled() or not player:IsLocallyControlled() then return end
-                if combat:IsBlocking() and combat:WantsToBlock() then
-                    combat:SetDesiredBlockState(false)
-                    Debug("Released guard for the player's dodge attempt")
-                end
-            end)
-            if not released then Log("WARNING: dodge guard interruption failed: %s", tostring(failure)) end
-            -- Leave the native return value and all normal dodge eligibility checks intact.
-        end)
-        dodgeHookIds = {preId, postId}
+        if not dodgeHookIds.guard then
+            local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:SetDesiredBlockState", ObserveGuard)
+            dodgeHookIds.guard = {preId, postId}
+        end
+        if not dodgeHookIds.dodge then
+            local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", BeforeDodge, AfterDodge)
+            dodgeHookIds.dodge = {preId, postId}
+        end
     end)
     if not ok then
         Log("WARNING: could not register dodge guard interruption: %s", tostring(reason))

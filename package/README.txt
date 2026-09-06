@@ -50,7 +50,9 @@ Dodge interrupts guard
 
 Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The shipped defaults enable it; a personal false override disables it. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] in your personal INI and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
 
-The option drops guard; release and press guard again to raise it afterward. A dodge attempt still follows the game's normal eligibility, stamina and animation rules, so an unsuccessful attempt can also leave guard lowered. No keys are hardcoded, so the feature follows the game's dodge action with keyboard or remapped controller controls. Live gameplay validation is pending.
+Guard is released only for the dodge activation request, then the held guard intent is restored. Keep holding guard to resume blocking when the game's combat rules allow it; failed dodge attempts also restore that intent. Releasing guard, losing possession, dying or changing worlds prevents stale recovery. Normal dodge eligibility, stamina and animation rules still apply. No keys are hardcoded, so keyboard and remapped controller controls are supported.
+
+Guard recovery runs only during a dodge request, with no added timer, input polling or global object searches. It caches ownership only until that request returns. The existing parry attribute check is unchanged.
 
 
 Console commands

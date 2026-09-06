@@ -1,5 +1,11 @@
 # Changes
 
+## Pending changes
+
+- Restore held guard after a dodge request, including failed attempts, so directional parrying does not require releasing and pressing guard again.
+- Respect guard releases and player/world changes during the request.
+- Recover guard without additional timers, input polling or object searches.
+
 ## 1.1.1 — 2026-09-06
 
 - Fix a potential crash when loading a save or respawning.

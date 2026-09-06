@@ -7,7 +7,7 @@ More forgiving parries, with an optional dodge that interrupts guard.
 [*]Dodge can release guard automatically, so you can attempt a dodge while holding guard. Enabled by default; easy to turn off.
 [*]Personal settings stay separate from the mod and survive updates.
 [/list]
-After a dodge attempt, release and press guard again to raise it. Normal stamina and dodge restrictions still apply; a failed attempt can also lower guard. [b]The new dodge option still needs in-game validation.[/b]
+Keep holding guard to resume blocking after a dodge; failed dodge attempts also preserve held guard. Releasing guard cancels recovery. Normal stamina and combat restrictions still apply. Recovery adds no timer or input polling.
 
 [b]Installation[/b]
 Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]UE4SS (Lua mods)[/b] if prompted, then enable and deploy.

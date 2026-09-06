@@ -1,9 +1,10 @@
 # Changes
 
-## Unreleased
+## 1.1.1 — 2026-09-06
 
 - Fix invalid `get()` lookups on parry attribute structs and reflected objects. Only the dodge hook parameter is unwrapped; attribute values are read directly.
 - Reject attribute reads/writes when their owner is no longer valid, and skip maintenance writes when the current attribute cannot be read.
+- Preserve the one-second default polling interval and cached references. Healthy ticks perform no global searches, name lookups, writes, or logging; Lua regression counts drop from nine protected calls to seven per tick. This is not an in-game FPS measurement.
 - Regression checks reproduce the invalid lookup in the previous script and confirm its removal. In-game crash verification after death/save loading remains pending.
 
 ## 1.1.0 — 2026-09-06

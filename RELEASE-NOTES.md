@@ -1,35 +1,26 @@
-# Easier Parry - UE4SS 1.1.0
+# Easier Parry - UE4SS 1.1.1
 
-## Unreleased crash fix
+This update removes the invalid attribute lookup identified in a UE4SS crash traceback.
 
-The development ZIP removes an invalid `get()` lookup on `GameplayAttributeData` identified in a crash traceback. Hook parameters still unwrap normally; reflected attribute and object values are read directly. Invalid attribute owners are rejected, and failed maintenance reads no longer trigger writes.
+## Changes
 
-Lua regressions cover the previous invalid lookup, struct/scalar reads and writes, player replacement, queued invalidation, and the existing guard and personal-settings behavior. Confirmation in game after death/save loading is still required. Version metadata is unchanged.
-
-Dodge can now interrupt guard, and personal settings survive mod updates.
-
-## What's new
-
-- Dodge interruption is enabled by default. The game drops guard before attempting a dodge. Release and press guard again afterward; normal stamina and dodge restrictions still apply, and a failed attempt can also lower guard.
-- The ZIP supplies EasierParryUE4SS.defaults.ini. Your overrides live separately at %LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini and are never packaged or replaced by updates.
-- Settings load once at startup. Console factor, on/off and dodge on/off commands save only their changed settings to your personal file, preserving comments and unrelated values. Restart after direct INI edits.
-- UTF-8 INIs with or without a BOM are supported. Configuration errors are logged; unreadable personal files are not replaced.
-- The Nexus description is shorter and links to the [GitHub source](https://github.com/my-mods/Easier-Parry-UE4SS). Listing materials stay outside the ZIP.
-
-The default parry multiplier remains 2x, configurable from 0.1x to 50x. Set dodgeInterruptsGuard = false to disable guard interruption. The master enabled setting controls both features.
+- Read parry attribute structs and reflected objects directly. Only the dodge hook parameter is unwrapped with get().
+- Reject attribute reads and writes when the owning object is invalid. Skip maintenance writes if the current attribute cannot be read.
+- Keep the same one-second default interval and cached player/attribute references. Healthy checks add no searches, name lookups, writes, or logging.
+- Preserve the parry multiplier, guard/dodge options, and personal settings introduced in 1.1.0.
 
 ## Updating
 
-Requires [UE4SS for Dawnwalker](https://www.nexusmods.com/thebloodofdawnwalker/mods/18); no previous Easier Parry version is required.
+Requires [UE4SS for Dawnwalker](https://www.nexusmods.com/thebloodofdawnwalker/mods/18). No previous Easier Parry version is required.
 
-Before replacing an older Vortex entry, copy its Scripts/EasierParryUE4SS.ini to the personal path above if you have custom settings and no personal file exists. Vortex may remove the old packaged INI during replacement. If still present at first startup, it is copied automatically; an existing personal INI always wins. Later updates require no copying.
+Close the game, replace/reinstall the existing entry from Easier-Parry-UE4SS.zip, select **UE4SS (Lua mods)** if prompted, enable and deploy, then restart. Keep one enabled Easier Parry entry and let the new main.lua win over an older copy. An existing personal INI in %LOCALAPPDATA%/Dawnwalker/Saved/Config remains untouched.
 
-Close the game, replace/reinstall the existing entry from Easier-Parry-UE4SS.zip, select **UE4SS (Lua mods)** if prompted, then deploy and restart. Keep one enabled entry. The new main.lua and defaults INI must come from this version. Controller Tweaks is optional; HUDTweaks is not required.
-
-Other mods changing parry timing or guard/dodge behavior may conflict. Uninstall through Vortex and deploy; your personal settings remain.
+If upgrading from 1.0.3 or earlier with custom settings and no personal INI, back up the old Scripts/EasierParryUE4SS.ini and copy it to the personal path before replacement. The new package supplies defaults separately; it does not merge or overwrite your personal settings.
 
 ## Validation
 
-Lua source/archive regressions, actual Windows configuration file tests, and Vortex installer planning passed. Two builds replace the same ZIP; archive contents match the source allowlist. No game or Vortex deployment was changed.
+Lua 5.4 checks reproduce the invalid reflected lookup in 1.1.0 and confirm its removal in the fixed source and ZIP. Tests cover struct/scalar access, reflection and direct writes, unreadable/dead owners, queued invalidation, player replacement, guard behavior, and personal settings.
 
-**Prerelease: live gameplay validation is pending.** Check guard-to-dodge on keyboard and controller, guard re-entry, low stamina, hit reactions, and death/save loading. The original reported reset and stutter causes are not claimed fixed by these tests. Native integration was inspected against build 25129649 / CL-257186; no newer-build compatibility claim is made.
+Across 600 healthy mock ticks, protected Lua calls drop from 5,400 to 4,200. The extra owner validity check is offset by removing failed wrapper probes. This measures operation counts, not in-game frame rate or latency.
+
+**Prerelease: confirmation in game is pending.** Repeat death/save loading and guard-to-dodge checks after installing. The crash path is addressed; native runtime correctness cannot be established by mocked tests. Inspected against Dawnwalker CL-257186 and the installed compatible UE4SS build.

@@ -1,26 +1,25 @@
-# Easier Parry - UE4SS v1.0.8
+# Easier Parry - UE4SS v1.1.0
 
-Settings follow one rule: load the INI once at game startup, then retain the selection until a console command changes it or the game exits. Console changes are saved to the same INI for the next game start.
+Adds an optional setting that releases active guard when the player attempts a dodge, allowing the normal dodge activation path to run after guard is released.
 
-## Commands and settings
+## Enable the option
 
-- `easierparry 3` selects a 3x multiplier, enables the mod and saves factor/enabled.
-- `easierparry on` and `easierparry off` save the enabled state alongside the selected factor.
-- `easierparry status` displays the current selection, baseline and target.
-- The former `easierparry reload` command displays guidance without rereading settings. Restart after direct INI edits.
+The default is off. Run `easierparry dodge on` in the UE4SS console to enable and save it, or set `dodgeInterruptsGuard = true` under `[General]` in EasierParryUE4SS.ini and restart. `easierparry dodge off` disables and saves the option. `easierparry status` reports the option and hook status. The master `enabled` setting controls both features. The parry factor stays unchanged.
 
-Saving preserves comments, line endings, UTF-8 BOMs and unrelated settings. If the INI is missing, a new one is created on a console change. If saving fails, the selection stays active for that session and the log reports that it was not saved. Startup uses defaults for missing settings; factor defaults to 2.0.
+Guard is dropped for the dodge attempt; release and press guard again to raise it afterward. Normal dodge eligibility, stamina and animation checks still apply. An unsuccessful attempt can also lower guard. The feature follows the game's dodge action and uses no fixed keyboard/controller keys.
 
-Death and save loading do not reread or reset the selected settings. Player lookup and parry attribute application are unchanged; this release does not claim to establish the cause of the earlier reported death/reload effect.
+The v1.0.8 settings behavior is retained: startup loads the INI once, console selections are saved, and death/loading do not reread the file.
 
 ## Installation and updates
 
-Requires Dawnwalker-compatible UE4SS 3.x. Close the game, replace/reinstall the existing Easier Parry entry with Easier-Parry-UE4SS.zip through Vortex, then deploy and restart. Use **UE4SS (Lua mods)** if prompted. Keep one enabled entry; no earlier version is required.
+Requires Dawnwalker-compatible UE4SS 3.x. Close the game, back up custom INI preferences, and replace/reinstall the existing Easier Parry entry with Easier-Parry-UE4SS.zip through Vortex. Use **UE4SS (Lua mods)** if prompted, deploy, and restart. Keep one enabled entry; no earlier version is required. The ZIP includes a full default INI and does not merge existing preferences.
 
-The archive includes the full INI with factor = 2.0 and pollMilliseconds = 1000. Back up your preferences and reapply them after replacement; settings are not automatically merged. Other mods changing ParryWindowMultiplier may conflict. Disable/remove in Vortex and deploy to uninstall.
+Other mods that alter guard/dodge behavior or ParryWindowMultiplier can conflict. This release replaces this mod's main.lua and INI, and introduces no new shared payload files. Controller Tweaks is optional; no HUDTweaks dependency is added. Uninstall by disabling/removing in Vortex, deploying, and restarting.
 
 ## Validation
 
-Lua 5.4 source/archive regression tests cover startup-only loading, saved console selections, restart round trips, simulated player destruction/recreation, unchanged settings through the old reload command, on/off persistence, failed saves, missing files/keys, invalid input, and 600 healthy polls without file reads or redundant writes. Actual Windows file-I/O tests preserve BOMs, CRLF, comments and unrelated keys; a fresh Lua session reads back the saved factor and enabled state.
+Lua 5.4 source and archive regressions cover the pre-dodge guard release, default/off/master-disable behavior, preserved native return values, NPC/remote/default-object exclusion, loading/death/possession transitions, failed calls, duplicate-hook prevention, persisted toggles and preservation of comments/unrelated settings. Existing startup-only settings and save round-trip tests also pass.
 
-Two builds overwrite the stable ZIP. Archive allowlist/source bytes and read-only installer planning against the installed Vortex extension are verified. This remains a prerelease pending live gameplay validation. Target build remains 25129649 / CL-257186 without a new compatibility claim.
+Two builds replace the same ZIP. The actual archive is checked against an exact allowlist and canonical source bytes, with read-only installer planning against the installed Vortex extension. Native integration was inspected against local build 25129649 / CL-257186; no new-build compatibility claim is made.
+
+**Prerelease: live gameplay validation is still required.** Check guard-to-dodge with keyboard and controller, repeated dodges, guard re-entry, low stamina, hit reactions, and death/save loading. No installation, deployment or in-game test was performed for this release.

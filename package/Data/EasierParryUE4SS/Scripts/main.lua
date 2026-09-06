@@ -16,6 +16,7 @@ local config = {
     factor = 2.0,
     pollMilliseconds = 1000,
     debugLogging = false,
+    dodgeInterruptsGuard = false,
 }
 
 local active = nil
@@ -77,10 +78,11 @@ local function LoadConfig()
             local key, value = string.match(clean, "^([%w_]+)%s*=%s*(.-)%s*$")
             if key ~= nil then
                 key = string.lower(key)
-                if key == "enabled" or key == "debuglogging" then
+                if key == "enabled" or key == "debuglogging" or key == "dodgeinterruptsguard" then
                     local parsed = ParseBoolean(value)
                     if parsed ~= nil then
-                        config[key == "enabled" and "enabled" or "debugLogging"] = parsed
+                        local field = ({enabled="enabled", debuglogging="debugLogging", dodgeinterruptsguard="dodgeInterruptsGuard"})[key]
+                        config[field] = parsed
                     end
                 elseif key == "factor" or key == "pollmilliseconds" then
                     local parsed = tonumber(value)
@@ -138,7 +140,7 @@ local function SetIniValue(contents, key, value)
     end))
 end
 
-local function SaveConfig()
+local function SaveConfig(saveDodge)
     local path = IniPath()
     -- Read only to preserve unrelated edits; these bytes never replace session settings.
     local file, _, code = io.open(path, "rb")
@@ -155,6 +157,7 @@ local function SaveConfig()
     end
     contents = SetIniValue(contents, "factor", string.format("%.17g", config.factor))
     contents = SetIniValue(contents, "enabled", tostring(config.enabled))
+    if saveDodge then contents = SetIniValue(contents, "dodgeinterruptsguard", tostring(config.dodgeInterruptsGuard)) end
     file = io.open(path, "wb")
     if file == nil then
         Log("WARNING: could not save %s; settings remain active for this session", path)
@@ -192,6 +195,45 @@ end
 
 local function IsDefaultObject(object)
     return string.find(SafeName(object), "Default__", 1, true) ~= nil
+end
+
+-- GA_Input_CombatDodge calls this reflected native function before GA_Dodge
+-- performs its usual activation/state/cost checks. No input keys are hardcoded.
+local dodgeHookInstalled = false
+local function EnsureDodgeHook()
+    if dodgeHookInstalled then return true end
+    if not config.dodgeInterruptsGuard then return false end
+    if RegisterHook == nil then
+        Log("WARNING: dodge guard interruption unavailable: RegisterHook is missing")
+        return false
+    end
+    local ok, reason = pcall(function()
+        RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", function(context)
+            if not config.enabled or not config.dodgeInterruptsGuard then return end
+            local released, failure = pcall(function()
+                local combat = Unwrap(context)
+                if not IsLive(combat) or IsDefaultObject(combat) then return end
+                local player = Unwrap(combat:GetCharacter())
+                -- Resolve possession on every dodge request. Never retain player objects
+                -- across loads, death, or possession changes; never alter an NPC's guard.
+                if not IsLive(player) or IsDefaultObject(player)
+                    or not player:IsPlayerControlled() or not player:IsLocallyControlled() then return end
+                if combat:IsBlocking() and combat:WantsToBlock() then
+                    combat:SetDesiredBlockState(false)
+                    Debug("Released guard for the player's dodge attempt")
+                end
+            end)
+            if not released then Log("WARNING: dodge guard interruption failed: %s", tostring(failure)) end
+            -- Leave the native return value and all normal dodge eligibility checks intact.
+        end)
+    end)
+    if not ok then
+        Log("WARNING: could not register dodge guard interruption: %s", tostring(reason))
+        return false
+    end
+    dodgeHookInstalled = true
+    Log("Dodge guard interruption hook ready")
+    return true
 end
 
 local function NearlyEqual(left, right)
@@ -407,12 +449,31 @@ local function Tick()
 end
 
 LoadConfig()
+if config.enabled and config.dodgeInterruptsGuard then EnsureDodgeHook() end
 
 if RegisterConsoleCommandHandler ~= nil then
     RegisterConsoleCommandHandler("easierparry", function(fullCommand, parameters, ar)
         local command = string.lower(tostring(parameters[1] or "status"))
 
+        if command == "dodge" then
+            local value = ParseBoolean(parameters[2])
+            if value == nil then
+                Log("Use easierparry dodge on | off (current=%s)", tostring(config.dodgeInterruptsGuard))
+                return true
+            end
+            local previous = config.dodgeInterruptsGuard
+            config.dodgeInterruptsGuard = value
+            if value and not EnsureDodgeHook() then
+                config.dodgeInterruptsGuard = previous
+                return true
+            end
+            SaveConfig(true)
+            Log("dodgeInterruptsGuard=%s (mod enabled=%s)", tostring(value), tostring(config.enabled))
+            return true
+        end
+
         if command == "status" then
+            Log("dodgeInterruptsGuard=%s hookReady=%s", tostring(config.dodgeInterruptsGuard), tostring(dodgeHookInstalled))
             if active ~= nil then
                 Log(
                     "enabled=%s factor=%.3f baseline=%.4f/%.4f target=%.4f/%.4f",
@@ -439,6 +500,7 @@ if RegisterConsoleCommandHandler ~= nil then
 
         if command == "on" then
             config.enabled = true
+            if config.dodgeInterruptsGuard then EnsureDodgeHook() end
             Log("Enabled")
             SaveConfig()
             return true
@@ -454,12 +516,13 @@ if RegisterConsoleCommandHandler ~= nil then
             RestoreBaseline()
             config.factor = math.max(0.1, math.min(50.0, runtimeFactor))
             config.enabled = true
+            if config.dodgeInterruptsGuard then EnsureDodgeHook() end
             Log("Using factor %.3f", config.factor)
             SaveConfig()
             return true
         end
 
-        Log("Commands: easierparry status | on | off | <factor>")
+        Log("Commands: easierparry status | on | off | <factor> | dodge on | dodge off")
         return true
     end)
 end

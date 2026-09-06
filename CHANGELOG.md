@@ -1,13 +1,13 @@
 # Changes
 
-## 1.1.0 — 2026-09-06
+## Pending changes
 
 - Add optional dodgeInterruptsGuard, disabled by default, and saved easierparry dodge on/off commands.
 - Release the locally controlled player's active guard before the normal dodge activation attempt, without overriding dodge eligibility or its result.
 - Resolve the request's player directly to avoid stale references across loading and possession changes.
 - Retain v1.0.8 startup-only settings and saved console selections.
 - Guard must be raised again after interruption; failed dodge attempts can also lower guard.
-- Prerelease: simulated Lua and package checks pass; live guard/dodge validation is pending.
+- Development update: simulated Lua and package checks pass; live guard/dodge validation is pending.
 
 ## 1.0.8 — 2026-09-06
 

@@ -200,6 +200,7 @@ end
 -- GA_Input_CombatDodge calls this reflected native function before GA_Dodge
 -- performs its usual activation/state/cost checks. No input keys are hardcoded.
 local dodgeHookInstalled = false
+local dodgeHookIds = nil
 local function EnsureDodgeHook()
     if dodgeHookInstalled then return true end
     if not config.dodgeInterruptsGuard then return false end
@@ -208,7 +209,7 @@ local function EnsureDodgeHook()
         return false
     end
     local ok, reason = pcall(function()
-        RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", function(context)
+        local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", function(context)
             if not config.enabled or not config.dodgeInterruptsGuard then return end
             local released, failure = pcall(function()
                 local combat = Unwrap(context)
@@ -226,6 +227,7 @@ local function EnsureDodgeHook()
             if not released then Log("WARNING: dodge guard interruption failed: %s", tostring(failure)) end
             -- Leave the native return value and all normal dodge eligibility checks intact.
         end)
+        dodgeHookIds = {preId, postId}
     end)
     if not ok then
         Log("WARNING: could not register dodge guard interruption: %s", tostring(reason))

@@ -1,5 +1,11 @@
 # Easier Parry - UE4SS 1.1.0
 
+## Unreleased crash fix
+
+The development ZIP removes an invalid `get()` lookup on `GameplayAttributeData` identified in a crash traceback. Hook parameters still unwrap normally; reflected attribute and object values are read directly. Invalid attribute owners are rejected, and failed maintenance reads no longer trigger writes.
+
+Lua regressions cover the previous invalid lookup, struct/scalar reads and writes, player replacement, queued invalidation, and the existing guard and personal-settings behavior. Confirmation in game after death/save loading is still required. Version metadata is unchanged.
+
 Dodge can now interrupt guard, and personal settings survive mod updates.
 
 ## What's new

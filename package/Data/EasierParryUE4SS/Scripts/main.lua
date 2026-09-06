@@ -254,13 +254,6 @@ local function IsLive(object)
     return ok and valid == true
 end
 
-local function Unwrap(value)
-    if value == nil then return nil end
-    local ok, unwrapped = pcall(function() return value:get() end)
-    if ok and unwrapped ~= nil then return unwrapped end
-    return value
-end
-
 local function SafeName(object)
     if object == nil then return "<nil>" end
     local ok, name = pcall(function() return object:GetFullName() end)
@@ -287,9 +280,12 @@ local function EnsureDodgeHook()
         local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", function(context)
             if not config.enabled or not config.dodgeInterruptsGuard then return end
             local released, failure = pcall(function()
-                local combat = Unwrap(context)
+                -- Only hook parameters are wrappers. Reflected UObject/struct values
+                -- must not be probed for get(): that becomes an Unreal property lookup.
+                if context == nil then return end
+                local combat = context:get()
                 if not IsLive(combat) or IsDefaultObject(combat) then return end
-                local player = Unwrap(combat:GetCharacter())
+                local player = combat:GetCharacter()
                 -- Resolve possession on every dodge request. Never retain player objects
                 -- across loads, death, or possession changes; never alter an NPC's guard.
                 if not IsLive(player) or IsDefaultObject(player)
@@ -319,14 +315,16 @@ local function NearlyEqual(left, right)
 end
 
 local function ReadAttribute(attributeSet)
+    if not IsLive(attributeSet) then return nil, nil, nil, "attribute owner is not live" end
     local ok, raw = pcall(function() return attributeSet[ATTRIBUTE_FIELD] end)
     if not ok or raw == nil then return nil, nil, nil, "attribute property was not readable" end
 
-    raw = Unwrap(raw)
     if type(raw) == "number" then return raw, raw, "number", nil end
 
-    local okBase, base = pcall(function() return Unwrap(raw.BaseValue) end)
-    local okCurrent, current = pcall(function() return Unwrap(raw.CurrentValue) end)
+    -- FGameplayAttributeData is already a struct view, not a parameter wrapper.
+    -- Keep it local to this read so no struct view survives a player replacement.
+    local okBase, base = pcall(function() return raw.BaseValue end)
+    local okCurrent, current = pcall(function() return raw.CurrentValue end)
     if okBase and okCurrent and type(base) == "number" and type(current) == "number" then
         return base, current, "struct", nil
     end
@@ -364,13 +362,14 @@ local function WriteDirect(attributeSet, base, current, kind)
             return
         end
 
-        local raw = Unwrap(attributeSet[ATTRIBUTE_FIELD])
+        local raw = attributeSet[ATTRIBUTE_FIELD]
         raw.BaseValue = base
         raw.CurrentValue = current
     end)
 end
 
 local function WriteAttribute(attributeSet, base, current, kind)
+    if not IsLive(attributeSet) then return false, "attribute owner is not live" end
     local ok = WriteWithReflection(attributeSet, base, current, kind)
     if not ok then ok = WriteDirect(attributeSet, base, current, kind) end
     if not ok then return false, "both reflection and direct writes failed" end
@@ -411,7 +410,7 @@ local function FindPlayerAttributeSet()
         return nil, nil, "waiting for a live player"
     end
 
-    local gotSet, attributeSet = pcall(function() return Unwrap(player[ATTRIBUTE_SET_FIELD]) end)
+    local gotSet, attributeSet = pcall(function() return player[ATTRIBUTE_SET_FIELD] end)
     if not gotSet or not IsLive(attributeSet) then
         return player, nil, "waiting for the player's CharDevAttributeSet"
     end
@@ -502,7 +501,11 @@ local function Poll()
     end
 
     local attributeSet = active.attributeSet
-    local base, current = ReadAttribute(attributeSet)
+    local base, current, _, reason = ReadAttribute(attributeSet)
+    if base == nil then
+        RecordFailure(reason)
+        return
+    end
     if not NearlyEqual(base, active.targetBase) or not NearlyEqual(current, active.targetCurrent) then
         local repaired, repairReason = WriteAttribute(
             attributeSet,

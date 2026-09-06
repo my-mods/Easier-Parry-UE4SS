@@ -1,5 +1,11 @@
 # Changes
 
+## Unreleased
+
+- Fix invalid `get()` lookups on parry attribute structs and reflected objects. Only the dodge hook parameter is unwrapped; attribute values are read directly.
+- Reject attribute reads/writes when their owner is no longer valid, and skip maintenance writes when the current attribute cannot be read.
+- Regression checks reproduce the invalid lookup in the previous script and confirm its removal. In-game crash verification after death/save loading remains pending.
+
 ## 1.1.0 — 2026-09-06
 
 - Add optional dodge interruption of guard, enabled by default. Release and press guard again afterward; normal dodge restrictions still apply.

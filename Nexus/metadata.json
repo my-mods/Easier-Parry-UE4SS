@@ -1,6 +1,6 @@
 {
   "name": "Easier Parry - UE4SS",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "game": "The Blood of Dawnwalker",
   "nexusDomain": "thebloodofdawnwalker",
   "summary": "Configurable runtime multiplier for Coen's parry timing window.",

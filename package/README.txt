@@ -32,16 +32,17 @@ factor = 2.0
 pollMilliseconds = 1000
 debugLogging = false
 
-factor = 1.0 gives vanilla timing; 2.0 doubles the window. Use easierparry reload in the UE4SS console after changing the factor or enabled setting. Restart the game after changing pollMilliseconds.
+The INI is read once when the game starts. Its factor stays selected until you change it through the console or exit the game. Death and save loading do not reload settings. Missing settings use their defaults; factor defaults to 2.0.
 
-The INI beside main.lua is loaded at startup and on the explicit easierparry reload command. Keep a valid numeric factor under [General]. UTF-8 files with or without a BOM are supported. Failed reloads keep the last working settings; restart remains required for polling interval changes. The startup log identifies the selected file and factor.
+Console changes are saved to the same INI for the next game start. Only factor and enabled are updated; other settings and comments are preserved. If saving fails, the new selection remains active for the current session and the log reports the failure.
+
+For direct INI edits, restart the game to load them. UTF-8 files with or without a BOM are supported.
 
 Console commands
 
-- easierparry status — show the baseline and current timing.
-- easierparry reload — reload the INI.
-- easierparry off / easierparry on — toggle the mod for this session.
-- easierparry 3 — use a 3× multiplier for this session without saving it.
+- easierparry status — show the selected factor, baseline and target timing.
+- easierparry 3 — select a 3× multiplier, enable the mod and save the selection.
+- easierparry off / easierparry on — disable/enable the mod and save the selection.
 
 To check that the mod is active, load a save and look for [EasierParryUE4SS] Applied in ue4ss/UE4SS.log.
 

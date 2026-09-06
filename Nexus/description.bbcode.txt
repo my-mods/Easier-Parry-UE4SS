@@ -22,7 +22,7 @@ recreated or the game recalculates the attribute.
 [*]Reacquires invalid references after loading or recreation.
 [*]No PAK replacements or IoStore file conflicts.
 [*]Optional diagnostic logging, disabled by default.
-[*]UE4SS console commands for status, reload, toggle, and quick testing.
+[*]UE4SS console commands to view, change and save the selected settings.
 [/list]
 
 [b]Requirements[/b]
@@ -62,25 +62,24 @@ debugLogging = false
 [*][code]3.0[/code] triples the timing window.
 [/list]
 
-Use [code]easierparry reload[/code] in the UE4SS console after changing factor
-or enabled. Restart the game after changing the polling interval.
-
-The INI beside main.lua is read at startup or on an explicit reload. Keep a
-valid numeric factor under [General]. UTF-8 BOMs are supported. A failed reload
-keeps the last working settings instead of reverting to the default.
+The INI is read once at game startup. The selected factor stays active until you
+change it through the console or exit the game. Death and save loading do not
+reload settings. Missing settings use their defaults; factor defaults to 2.0.
+Restart the game after direct INI edits. UTF-8 files with or without a BOM work.
 
 [b]Console commands[/b]
 
 [code]
 easierparry status
-easierparry reload
 easierparry off
 easierparry on
 easierparry 3
 [/code]
 
-The number command changes the multiplier for the current session without
-editing the INI.
+The number command selects a multiplier and enables the mod. Number and on/off
+commands save factor and enabled to the same INI for the next game start,
+preserving other settings and comments. If saving fails, the selection remains
+active for the current session and the log reports the failure.
 
 [b]Logging and verification[/b]
 

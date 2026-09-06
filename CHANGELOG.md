@@ -1,5 +1,13 @@
 # Changes
 
+## 1.0.8 — 2026-09-06
+
+- Read INI settings only at startup; retain the selected factor throughout the session.
+- Console factor and on/off commands update the session selection and save factor/enabled to the same INI, preserving comments and unrelated settings.
+- Keep console selections active even if saving fails, with a warning in the log.
+- The former reload command now displays guidance without rereading settings.
+- Player lookup and parry attribute application are unchanged.
+
 ## 1.0.7 — 2026-09-06
 
 - Narrow the update to verified INI-loading defects. Remove v1.0.6 controller tracking and baseline-restoration changes; runtime player handling returns to v1.0.5 behavior.

@@ -67,9 +67,7 @@ local function LoadConfig()
 
     -- Editors may save a UTF-8 BOM before the first section header.
     contents = contents:gsub("^\239\187\191", "")
-    local nextConfig = {}
-    for key, value in pairs(config) do nextConfig[key] = value end
-    local section, foundFactor = "", false
+    local section = ""
     for line in contents:gmatch("[^\r\n]+") do
         local clean = Trim((line:gsub("[;#].*$", "")))
         local sectionName = string.match(clean, "^%[([^%]]+)%]$")
@@ -82,30 +80,93 @@ local function LoadConfig()
                 if key == "enabled" or key == "debuglogging" then
                     local parsed = ParseBoolean(value)
                     if parsed ~= nil then
-                        nextConfig[key == "enabled" and "enabled" or "debugLogging"] = parsed
+                        config[key == "enabled" and "enabled" or "debugLogging"] = parsed
                     end
                 elseif key == "factor" or key == "pollmilliseconds" then
                     local parsed = tonumber(value)
                     if parsed == nil or parsed ~= parsed or math.abs(parsed) == math.huge then
-                        Log("WARNING: invalid %s in %s; keeping current settings", key, path)
-                        return false
-                    end
-                    if key == "factor" then
-                        nextConfig.factor = math.max(0.1, math.min(50.0, parsed))
-                        foundFactor = true
+                        Log("WARNING: invalid %s in %s; keeping its default", key, path)
+                    elseif key == "factor" then
+                        config.factor = math.max(0.1, math.min(50.0, parsed))
                     else
-                        nextConfig.pollMilliseconds = math.floor(math.max(100, math.min(5000, parsed)))
+                        config.pollMilliseconds = math.floor(math.max(100, math.min(5000, parsed)))
                     end
                 end
             end
         end
     end
-    if not foundFactor then
-        Log("WARNING: no [General] factor in %s; keeping current settings", path)
+    Log("Loaded configuration from %s (factor=%.3f, enabled=%s)", path, config.factor, tostring(config.enabled))
+    return true
+end
+
+-- Patch only the selected setting in [General], retaining comments and other keys.
+local function SetIniValue(contents, key, value)
+    local section, found, hasGeneral = "", false, false
+    local newline = contents:find("\r\n", 1, true) and "\r\n" or "\n"
+    local function Header(line)
+        local clean = Trim((line:gsub("^\239\187\191", ""):gsub("[;#].*$", "")))
+        local name = clean:match("^%[([^%]]+)%]$")
+        return name and string.lower(Trim(name))
+    end
+    contents = contents:gsub("[^\r\n]+", function(line)
+        local header = Header(line)
+        if header then
+            section = header
+            if header == "general" then hasGeneral = true end
+        elseif section == "general" then
+            local prefix, name = line:match("^(%s*([%w_]+)%s*=%s*)")
+            if name and string.lower(name) == key then
+                found = true
+                local suffix = line:match("([ \t]*[;#].*)$") or line:match("([ \t]*)$") or ""
+                return prefix .. value .. suffix
+            end
+        end
+        return line
+    end)
+    if found then return contents end
+    if not hasGeneral then
+        if contents ~= "" and not contents:match("[\r\n]$") then contents = contents .. newline end
+        return contents .. "[General]" .. newline .. key .. " = " .. value .. newline
+    end
+    local inserted = false
+    return (contents:gsub("[^\r\n]+", function(line)
+        if not inserted and Header(line) == "general" then
+            inserted = true
+            return line .. newline .. key .. " = " .. value
+        end
+        return line
+    end))
+end
+
+local function SaveConfig()
+    local path = IniPath()
+    -- Read only to preserve unrelated edits; these bytes never replace session settings.
+    local file, _, code = io.open(path, "rb")
+    local contents = ""
+    if file then
+        contents = file:read("*a")
+        file:close()
+    elseif code ~= 2 then
+        contents = nil
+    end
+    if contents == nil then
+        Log("WARNING: could not read %s for saving; settings remain active for this session", path)
         return false
     end
-    config = nextConfig
-    Log("Loaded configuration from %s (factor=%.3f, enabled=%s)", path, config.factor, tostring(config.enabled))
+    contents = SetIniValue(contents, "factor", string.format("%.17g", config.factor))
+    contents = SetIniValue(contents, "enabled", tostring(config.enabled))
+    file = io.open(path, "wb")
+    if file == nil then
+        Log("WARNING: could not save %s; settings remain active for this session", path)
+        return false
+    end
+    local written = file:write(contents)
+    local closed = file:close()
+    if not written or not closed then
+        Log("WARNING: saving %s failed; settings remain active for this session", path)
+        return false
+    end
+    Log("Saved factor=%.3f, enabled=%s to %s", config.factor, tostring(config.enabled), path)
     return true
 end
 
@@ -371,33 +432,34 @@ if RegisterConsoleCommandHandler ~= nil then
         if command == "off" then
             RestoreBaseline()
             config.enabled = false
-            Log("Disabled for this session")
+            Log("Disabled")
+            SaveConfig()
             return true
         end
 
         if command == "on" then
             config.enabled = true
-            Log("Enabled for this session")
+            Log("Enabled")
+            SaveConfig()
             return true
         end
 
         if command == "reload" then
-            if LoadConfig() then
-                RestoreBaseline()
-            end
+            Log("Settings are loaded once at startup. Use easierparry <factor>, on or off to change and save them.")
             return true
         end
 
         local runtimeFactor = tonumber(command)
-        if runtimeFactor ~= nil then
+        if runtimeFactor ~= nil and runtimeFactor == runtimeFactor and math.abs(runtimeFactor) ~= math.huge then
             RestoreBaseline()
             config.factor = math.max(0.1, math.min(50.0, runtimeFactor))
             config.enabled = true
-            Log("Runtime factor set to %.3f for this session", config.factor)
+            Log("Using factor %.3f", config.factor)
+            SaveConfig()
             return true
         end
 
-        Log("Commands: easierparry status | on | off | reload | <factor>")
+        Log("Commands: easierparry status | on | off | <factor>")
         return true
     end)
 end

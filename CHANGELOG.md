@@ -1,39 +1,13 @@
 # Changes
 
-## 1.0.8 — 2026-09-06
+## 1.0.9 — 2026-09-06
 
-- Read INI settings only at startup; retain the selected factor throughout the session.
-- Console factor and on/off commands update the session selection and save factor/enabled to the same INI, preserving comments and unrelated settings.
-- Keep console selections active even if saving fails, with a warning in the log.
-- The former reload command now displays guidance without rereading settings.
-- Player lookup and parry attribute application are unchanged.
-
-## 1.0.7 — 2026-09-06
-
-- Narrow the update to verified INI-loading defects. Remove v1.0.6 controller tracking and baseline-restoration changes; runtime player handling returns to v1.0.5 behavior.
-- Preserve working settings and the applied value when an explicit reload cannot read a valid factor.
-- Accept a UTF-8 BOM before [General].
-- Select the INI beside main.lua without falling through to unrelated INI copies, and log its path and effective factor.
-- The reported death/reload reset to 2.0 remains unconfirmed; ordinary player recreation retains the configured factor in regression tests.
-
-## 1.0.6 — 2026-09-06
-
-- Follow the local controller’s current pawn and parry attribute on each maintenance check, rather than waiting for old objects to become invalid.
-- Preserve the configured factor across player, attribute, and controller replacements; avoid compounding when a new pawn shares the previous attribute.
-- Avoid restoring a stale baseline over values already reset by the game during loading.
-- Log the configuration file path at startup to help identify which INI was loaded.
-- Retain the 2.0 default and all existing settings; gameplay validation of death/reload remains pending.
-
-## 1.0.5 — 2026-09-06
-
-- Keep Nexus thumbnail, description, attribution, and listing metadata in the repository’s Nexus folder, outside the Vortex ZIP.
-- Preserve Vortex name/version/description metadata and runtime installation paths.
-- Lua and INI payloads are unchanged from v1.0.4.
-
-## 1.0.4 — 2026-09-06
-
-- Replace the thumbnail with an official in-game sword-clash screenshot and a simple title overlay.
-- Include screenshot source attribution. Lua and INI payloads are unchanged.
+- Read the INI once at game startup and retain the selected multiplier for the session.
+- Save console multiplier and on/off changes to the same INI, preserving other settings and comments.
+- Keep the selected session value if saving fails, and report the failure in the log.
+- Read UTF-8 INIs with or without a BOM and log the selected configuration path and factor.
+- Direct INI edits now require a restart; the old reload command displays guidance without changing settings.
+- Keep Nexus listing materials separate from the Vortex ZIP; retain the README, license, changelog, release notes and Vortex metadata.
 
 ## 1.0.3 — 2026-09-05
 

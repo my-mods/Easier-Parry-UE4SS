@@ -6,9 +6,9 @@ Makes parrying more forgiving in *The Blood of Dawnwalker* by multiplying Coen's
 
 - **2× timing window** by default, configurable from **0.1× to 50×**.
 - Uses the game's current, difficulty-adjusted timing as its baseline.
-- Caches the player and parry attribute; healthy checks do not scan game objects.
+- Caches the local controller; healthy checks follow its current player and parry attribute without scanning game objects.
 - Checks once per second by default and writes only when the value changes.
-- Reacquires invalid player/attribute references after loading or recreation.
+- Follows player and attribute replacements after loading or possession, including when the previous objects remain valid.
 
 ## Installation
 
@@ -20,7 +20,7 @@ The ZIP includes Vortex metadata, the changelog, and release notes. Nexus listin
 
 For updates, close the game and replace/reinstall the existing mod entry from the new ZIP, then deploy through Vortex. Use the UE4SS (Lua mods) type. Keep one enabled Easier Parry entry.
 
-The ZIP includes the full EasierParryUE4SS.ini. Back up custom preferences before replacement and reapply them afterward; settings are not automatically merged. The new default pollMilliseconds is 1000.
+The ZIP includes the full EasierParryUE4SS.ini. Back up custom preferences before replacement and reapply them afterward; settings are not automatically merged. The default pollMilliseconds is 1000.
 
 To uninstall, disable/remove the mod in Vortex, deploy, and restart the game.
 
@@ -44,6 +44,8 @@ debugLogging = false
 - `easierparry reload` — reload the INI.
 - `easierparry off` / `easierparry on` — toggle the mod for this session.
 - `easierparry 3` — use a 3× multiplier for this session without saving it.
+
+A custom INI factor stays active across save loading and death/reload. The INI is read at startup or with `easierparry reload`, not automatically on each save load.
 
 To check that the mod is active, load a save and look for `[EasierParryUE4SS] Applied` in `ue4ss/UE4SS.log`.
 

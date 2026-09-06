@@ -6,7 +6,7 @@
 
 local MOD_NAME = "EasierParryUE4SS"
 local INI_NAME = "EasierParryUE4SS.ini"
-local PLAYER_CLASS = "DawnwalkerPlayerCharacter"
+local CONTROLLER_CLASS = "PlayerController"
 local ATTRIBUTE_SET_FIELD = "CharDevAttributeSet"
 local ATTRIBUTE_FIELD = "ParryWindowMultiplier"
 local SCRIPT_SOURCE = debug.getinfo(1, "S").source
@@ -19,7 +19,7 @@ local config = {
 }
 
 local active = nil
-local cachedPlayer = nil
+local cachedController = nil
 local pending = false
 local lastFailure = nil
 
@@ -105,7 +105,7 @@ local function LoadConfig()
         end
     end
     file:close()
-    Debug("Loaded configuration from %s", loadedPath)
+    Log("Loaded configuration from %s", loadedPath)
 end
 
 local function IsLive(object)
@@ -207,29 +207,40 @@ local function WriteAttribute(attributeSet, base, current, kind)
     return true, nil
 end
 
+-- UObject wrappers may differ even when they refer to the same native object.
+local function SameObject(left, right)
+    if not IsLive(left) or not IsLive(right) then return false end
+    local ok, same = pcall(function() return left:GetAddress() == right:GetAddress() end)
+    return ok and same
+end
+
+local function IsCurrentController(controller)
+    if not IsLive(controller) then return false end
+    local ok, current = pcall(function()
+        local owner = Unwrap(controller.Player)
+        return controller:IsLocalController() == true and IsLive(owner)
+            and SameObject(Unwrap(owner.PlayerController), controller)
+    end)
+    return ok and current == true
+end
+
 local function FindPlayerAttributeSet()
-    local player = cachedPlayer
-    if not IsLive(player) then
-        local ok
-        ok, player = pcall(FindFirstOf, PLAYER_CLASS)
-        if not ok or not IsLive(player) or IsDefaultObject(player) then
-            player = nil
-            local foundAll, players = pcall(FindAllOf, PLAYER_CLASS)
-            if foundAll and players ~= nil then
-                for _, candidate in pairs(players) do
-                    if IsLive(candidate) and not IsDefaultObject(candidate) then
-                        player = candidate
-                        break
-                    end
+    if not IsCurrentController(cachedController) then
+        cachedController = nil
+        local ok, controllers = pcall(FindAllOf, CONTROLLER_CLASS)
+        if ok and controllers ~= nil then
+            for _, controller in pairs(controllers) do
+                if IsCurrentController(controller) and not IsDefaultObject(controller) then
+                    cachedController = controller
+                    break
                 end
             end
         end
-        cachedPlayer = player
     end
-    if not IsLive(player) then
-        return nil, nil, "waiting for a live player"
-    end
+    if cachedController == nil then return nil, nil, "waiting for the local player controller" end
 
+    local ok, player = pcall(function() return Unwrap(cachedController.Pawn) end)
+    if not ok or not IsLive(player) then return nil, nil, "waiting for the controlled player" end
     local gotSet, attributeSet = pcall(function() return Unwrap(player[ATTRIBUTE_SET_FIELD]) end)
     if not gotSet or not IsLive(attributeSet) then
         return player, nil, "waiting for the player's CharDevAttributeSet"
@@ -239,6 +250,13 @@ end
 
 local function RestoreBaseline()
     if active == nil or not IsLive(active.attributeSet) then
+        active = nil
+        return
+    end
+
+    -- Do not overwrite a value that the game has already reset during loading.
+    local base, current = ReadAttribute(active.attributeSet)
+    if not NearlyEqual(base, active.targetBase) or not NearlyEqual(current, active.targetCurrent) then
         active = nil
         return
     end
@@ -303,18 +321,17 @@ end
 local function Poll()
     if not config.enabled then return end
 
-    -- Global object discovery is only needed when the cache is absent or stale.
-    -- Healthy ticks validate the cached objects and read the value; no name lookups,
-    -- player resolution, reflection writes, or object-array scans are performed.
-    if active == nil or not IsLive(active.attributeSet) or not IsLive(active.player) then
-        -- A player can disappear while its attribute set is still live. Restore it
-        -- before forgetting the baseline, in case the next player shares that set.
+    -- Follow the current controller -> pawn -> attribute links even when the
+    -- previous objects remain valid. Healthy ticks use only cached/property reads.
+    local player, attributeSet, reason = FindPlayerAttributeSet()
+    if attributeSet == nil then
         RestoreBaseline()
-        local player, attributeSet, reason = FindPlayerAttributeSet()
-        if attributeSet == nil then
-            RecordFailure(reason)
-            return
-        end
+        RecordFailure(reason)
+        return
+    end
+    if active == nil or not SameObject(active.player, player)
+        or not SameObject(active.attributeSet, attributeSet) then
+        RestoreBaseline()
         local attached, attachReason = Attach(player, attributeSet)
         if not attached then RecordFailure(attachReason) else lastFailure = nil end
         return

@@ -1,5 +1,13 @@
 # Changes
 
+## 1.0.6 — 2026-09-06
+
+- Follow the local controller’s current pawn and parry attribute on each maintenance check, rather than waiting for old objects to become invalid.
+- Preserve the configured factor across player, attribute, and controller replacements; avoid compounding when a new pawn shares the previous attribute.
+- Avoid restoring a stale baseline over values already reset by the game during loading.
+- Log the configuration file path at startup to help identify which INI was loaded.
+- Retain the 2.0 default and all existing settings; gameplay validation of death/reload remains pending.
+
 ## 1.0.5 â€” 2026-09-06
 
 - Keep Nexus thumbnail, description, attribution, and listing metadata in the repositoryâ€™s Nexus folder, outside the Vortex ZIP.

@@ -19,7 +19,7 @@ recreated or the game recalculates the attribute.
 [*]Preserves the live vanilla or difficulty-adjusted baseline.
 [*]Caches player/attribute references and checks once per second by default.
 [*]No global object searches or redundant writes while the cache is healthy.
-[*]Reacquires invalid references after loading or recreation.
+[*]Follows the controlled player and attribute after loading or possession, even while old objects remain valid.
 [*]No PAK replacements or IoStore file conflicts.
 [*]Optional diagnostic logging, disabled by default.
 [*]UE4SS console commands for status, reload, toggle, and quick testing.
@@ -80,8 +80,8 @@ editing the INI.
 
 [b]Logging and verification[/b]
 
-The mod writes one short [code]Loaded[/code] message and one successful
-[code]Applied[/code] message. Continuous diagnostic logging is disabled by
+The mod logs the INI path and configured factor at startup, then an
+[code]Applied[/code] message whenever it attaches to the current player attribute. Continuous diagnostic logging is disabled by
 default and can be enabled with [code]debugLogging = true[/code].
 
 After loading a save, check:

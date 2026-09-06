@@ -6,7 +6,7 @@
 
 local MOD_NAME = "EasierParryUE4SS"
 local INI_NAME = "EasierParryUE4SS.ini"
-local CONTROLLER_CLASS = "PlayerController"
+local PLAYER_CLASS = "DawnwalkerPlayerCharacter"
 local ATTRIBUTE_SET_FIELD = "CharDevAttributeSet"
 local ATTRIBUTE_FIELD = "ParryWindowMultiplier"
 local SCRIPT_SOURCE = debug.getinfo(1, "S").source
@@ -19,7 +19,7 @@ local config = {
 }
 
 local active = nil
-local cachedController = nil
+local cachedPlayer = nil
 local pending = false
 local lastFailure = nil
 
@@ -44,40 +44,33 @@ local function ParseBoolean(value)
     return nil
 end
 
-local function IniCandidates()
-    local candidates = {}
-    local source = SCRIPT_SOURCE or ""
-    if string.sub(source, 1, 1) == "@" then source = string.sub(source, 2) end
-
+local function IniPath()
+    local source = (SCRIPT_SOURCE or ""):gsub("^@", "")
     local directory = string.match(source, "^(.*)[/\\][^/\\]*$")
-    if directory ~= nil and directory ~= "" then
-        candidates[#candidates + 1] = directory .. "\\" .. INI_NAME
-        candidates[#candidates + 1] = directory .. "/" .. INI_NAME
-    end
-
-    candidates[#candidates + 1] = "ue4ss/Mods/" .. MOD_NAME .. "/Scripts/" .. INI_NAME
-    candidates[#candidates + 1] = INI_NAME
-    return candidates
+    if directory ~= nil and directory ~= "" then return directory .. "/" .. INI_NAME end
+    return "ue4ss/Mods/" .. MOD_NAME .. "/Scripts/" .. INI_NAME
 end
 
 local function LoadConfig()
-    local loadedPath = nil
-    local file = nil
-    for _, candidate in ipairs(IniCandidates()) do
-        file = io.open(candidate, "r")
-        if file ~= nil then
-            loadedPath = candidate
-            break
-        end
-    end
-
+    local path = IniPath()
+    local file = io.open(path, "r")
     if file == nil then
-        Log("WARNING: %s was not found; using enabled=true, factor=2.0", INI_NAME)
-        return
+        Log("WARNING: cannot open %s; keeping factor=%.3f, enabled=%s", path, config.factor, tostring(config.enabled))
+        return false
+    end
+    local contents = file:read("*a")
+    file:close()
+    if contents == nil then
+        Log("WARNING: cannot read %s; keeping current settings", path)
+        return false
     end
 
-    local section = ""
-    for line in file:lines() do
+    -- Editors may save a UTF-8 BOM before the first section header.
+    contents = contents:gsub("^\239\187\191", "")
+    local nextConfig = {}
+    for key, value in pairs(config) do nextConfig[key] = value end
+    local section, foundFactor = "", false
+    for line in contents:gmatch("[^\r\n]+") do
         local clean = Trim((line:gsub("[;#].*$", "")))
         local sectionName = string.match(clean, "^%[([^%]]+)%]$")
         if sectionName ~= nil then
@@ -86,26 +79,34 @@ local function LoadConfig()
             local key, value = string.match(clean, "^([%w_]+)%s*=%s*(.-)%s*$")
             if key ~= nil then
                 key = string.lower(key)
-                if key == "enabled" then
+                if key == "enabled" or key == "debuglogging" then
                     local parsed = ParseBoolean(value)
-                    if parsed ~= nil then config.enabled = parsed end
-                elseif key == "factor" then
-                    local parsed = tonumber(value)
-                    if parsed ~= nil then config.factor = math.max(0.1, math.min(50.0, parsed)) end
-                elseif key == "pollmilliseconds" then
-                    local parsed = tonumber(value)
                     if parsed ~= nil then
-                        config.pollMilliseconds = math.floor(math.max(100, math.min(5000, parsed)))
+                        nextConfig[key == "enabled" and "enabled" or "debugLogging"] = parsed
                     end
-                elseif key == "debuglogging" then
-                    local parsed = ParseBoolean(value)
-                    if parsed ~= nil then config.debugLogging = parsed end
+                elseif key == "factor" or key == "pollmilliseconds" then
+                    local parsed = tonumber(value)
+                    if parsed == nil or parsed ~= parsed or math.abs(parsed) == math.huge then
+                        Log("WARNING: invalid %s in %s; keeping current settings", key, path)
+                        return false
+                    end
+                    if key == "factor" then
+                        nextConfig.factor = math.max(0.1, math.min(50.0, parsed))
+                        foundFactor = true
+                    else
+                        nextConfig.pollMilliseconds = math.floor(math.max(100, math.min(5000, parsed)))
+                    end
                 end
             end
         end
     end
-    file:close()
-    Log("Loaded configuration from %s", loadedPath)
+    if not foundFactor then
+        Log("WARNING: no [General] factor in %s; keeping current settings", path)
+        return false
+    end
+    config = nextConfig
+    Log("Loaded configuration from %s (factor=%.3f, enabled=%s)", path, config.factor, tostring(config.enabled))
+    return true
 end
 
 local function IsLive(object)
@@ -207,40 +208,29 @@ local function WriteAttribute(attributeSet, base, current, kind)
     return true, nil
 end
 
--- UObject wrappers may differ even when they refer to the same native object.
-local function SameObject(left, right)
-    if not IsLive(left) or not IsLive(right) then return false end
-    local ok, same = pcall(function() return left:GetAddress() == right:GetAddress() end)
-    return ok and same
-end
-
-local function IsCurrentController(controller)
-    if not IsLive(controller) then return false end
-    local ok, current = pcall(function()
-        local owner = Unwrap(controller.Player)
-        return controller:IsLocalController() == true and IsLive(owner)
-            and SameObject(Unwrap(owner.PlayerController), controller)
-    end)
-    return ok and current == true
-end
-
 local function FindPlayerAttributeSet()
-    if not IsCurrentController(cachedController) then
-        cachedController = nil
-        local ok, controllers = pcall(FindAllOf, CONTROLLER_CLASS)
-        if ok and controllers ~= nil then
-            for _, controller in pairs(controllers) do
-                if IsCurrentController(controller) and not IsDefaultObject(controller) then
-                    cachedController = controller
-                    break
+    local player = cachedPlayer
+    if not IsLive(player) then
+        local ok
+        ok, player = pcall(FindFirstOf, PLAYER_CLASS)
+        if not ok or not IsLive(player) or IsDefaultObject(player) then
+            player = nil
+            local foundAll, players = pcall(FindAllOf, PLAYER_CLASS)
+            if foundAll and players ~= nil then
+                for _, candidate in pairs(players) do
+                    if IsLive(candidate) and not IsDefaultObject(candidate) then
+                        player = candidate
+                        break
+                    end
                 end
             end
         end
+        cachedPlayer = player
     end
-    if cachedController == nil then return nil, nil, "waiting for the local player controller" end
+    if not IsLive(player) then
+        return nil, nil, "waiting for a live player"
+    end
 
-    local ok, player = pcall(function() return Unwrap(cachedController.Pawn) end)
-    if not ok or not IsLive(player) then return nil, nil, "waiting for the controlled player" end
     local gotSet, attributeSet = pcall(function() return Unwrap(player[ATTRIBUTE_SET_FIELD]) end)
     if not gotSet or not IsLive(attributeSet) then
         return player, nil, "waiting for the player's CharDevAttributeSet"
@@ -250,13 +240,6 @@ end
 
 local function RestoreBaseline()
     if active == nil or not IsLive(active.attributeSet) then
-        active = nil
-        return
-    end
-
-    -- Do not overwrite a value that the game has already reset during loading.
-    local base, current = ReadAttribute(active.attributeSet)
-    if not NearlyEqual(base, active.targetBase) or not NearlyEqual(current, active.targetCurrent) then
         active = nil
         return
     end
@@ -321,17 +304,18 @@ end
 local function Poll()
     if not config.enabled then return end
 
-    -- Follow the current controller -> pawn -> attribute links even when the
-    -- previous objects remain valid. Healthy ticks use only cached/property reads.
-    local player, attributeSet, reason = FindPlayerAttributeSet()
-    if attributeSet == nil then
+    -- Global object discovery is only needed when the cache is absent or stale.
+    -- Healthy ticks validate the cached objects and read the value; no name lookups,
+    -- player resolution, reflection writes, or object-array scans are performed.
+    if active == nil or not IsLive(active.attributeSet) or not IsLive(active.player) then
+        -- A player can disappear while its attribute set is still live. Restore it
+        -- before forgetting the baseline, in case the next player shares that set.
         RestoreBaseline()
-        RecordFailure(reason)
-        return
-    end
-    if active == nil or not SameObject(active.player, player)
-        or not SameObject(active.attributeSet, attributeSet) then
-        RestoreBaseline()
+        local player, attributeSet, reason = FindPlayerAttributeSet()
+        if attributeSet == nil then
+            RecordFailure(reason)
+            return
+        end
         local attached, attachReason = Attach(player, attributeSet)
         if not attached then RecordFailure(attachReason) else lastFailure = nil end
         return
@@ -398,12 +382,9 @@ if RegisterConsoleCommandHandler ~= nil then
         end
 
         if command == "reload" then
-            RestoreBaseline()
-            config.enabled = true
-            config.factor = 2.0
-            config.debugLogging = false
-            LoadConfig()
-            Log("Reloaded %s (factor=%.3f, enabled=%s)", INI_NAME, config.factor, tostring(config.enabled))
+            if LoadConfig() then
+                RestoreBaseline()
+            end
             return true
         end
 

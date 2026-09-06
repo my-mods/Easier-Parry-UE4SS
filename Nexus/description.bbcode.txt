@@ -19,7 +19,7 @@ recreated or the game recalculates the attribute.
 [*]Preserves the live vanilla or difficulty-adjusted baseline.
 [*]Caches player/attribute references and checks once per second by default.
 [*]No global object searches or redundant writes while the cache is healthy.
-[*]Follows the controlled player and attribute after loading or possession, even while old objects remain valid.
+[*]Reacquires invalid references after loading or recreation.
 [*]No PAK replacements or IoStore file conflicts.
 [*]Optional diagnostic logging, disabled by default.
 [*]UE4SS console commands for status, reload, toggle, and quick testing.
@@ -65,6 +65,10 @@ debugLogging = false
 Use [code]easierparry reload[/code] in the UE4SS console after changing factor
 or enabled. Restart the game after changing the polling interval.
 
+The INI beside main.lua is read at startup or on an explicit reload. Keep a
+valid numeric factor under [General]. UTF-8 BOMs are supported. A failed reload
+keeps the last working settings instead of reverting to the default.
+
 [b]Console commands[/b]
 
 [code]
@@ -80,8 +84,8 @@ editing the INI.
 
 [b]Logging and verification[/b]
 
-The mod logs the INI path and configured factor at startup, then an
-[code]Applied[/code] message whenever it attaches to the current player attribute. Continuous diagnostic logging is disabled by
+The mod logs the loaded INI path and factor at startup, followed by an
+[code]Applied[/code] message when it attaches to the player attribute. Continuous diagnostic logging is disabled by
 default and can be enabled with [code]debugLogging = true[/code].
 
 After loading a save, check:

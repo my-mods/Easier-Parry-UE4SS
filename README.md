@@ -6,9 +6,9 @@ Makes parrying more forgiving in *The Blood of Dawnwalker* by multiplying Coen's
 
 - **2× timing window** by default, configurable from **0.1× to 50×**.
 - Uses the game's current, difficulty-adjusted timing as its baseline.
-- Caches the local controller; healthy checks follow its current player and parry attribute without scanning game objects.
+- Caches the player and parry attribute; healthy checks do not scan game objects.
 - Checks once per second by default and writes only when the value changes.
-- Follows player and attribute replacements after loading or possession, including when the previous objects remain valid.
+- Reacquires invalid player/attribute references after loading or recreation.
 
 ## Installation
 
@@ -38,14 +38,14 @@ debugLogging = false
 
 `factor = 1.0` gives vanilla timing; `2.0` doubles the window. Use `easierparry reload` in the UE4SS console after changing the factor or enabled setting. Restart the game after changing `pollMilliseconds`.
 
+The INI beside main.lua is loaded at startup and on the explicit easierparry reload command. Keep a valid numeric factor under [General]. UTF-8 files with or without a BOM are supported. Failed reloads keep the last working settings; restart remains required for polling interval changes. The startup log identifies the selected file and factor.
+
 ## Console commands
 
 - `easierparry status` — show the baseline and current timing.
 - `easierparry reload` — reload the INI.
 - `easierparry off` / `easierparry on` — toggle the mod for this session.
 - `easierparry 3` — use a 3× multiplier for this session without saving it.
-
-A custom INI factor stays active across save loading and death/reload. The INI is read at startup or with `easierparry reload`, not automatically on each save load.
 
 To check that the mod is active, load a save and look for `[EasierParryUE4SS] Applied` in `ue4ss/UE4SS.log`.
 

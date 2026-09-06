@@ -1,8 +1,16 @@
 # Changes
 
-## 1.0.6 — 2026-09-06
+## 1.0.7 â€” 2026-09-06
 
-- Follow the local controller’s current pawn and parry attribute on each maintenance check, rather than waiting for old objects to become invalid.
+- Narrow the update to verified INI-loading defects. Remove v1.0.6 controller tracking and baseline-restoration changes; runtime player handling returns to v1.0.5 behavior.
+- Preserve working settings and the applied value when an explicit reload cannot read a valid factor.
+- Accept a UTF-8 BOM before [General].
+- Select the INI beside main.lua without falling through to unrelated INI copies, and log its path and effective factor.
+- The reported death/reload reset to 2.0 remains unconfirmed; ordinary player recreation retains the configured factor in regression tests.
+
+## 1.0.6 â€” 2026-09-06
+
+- Follow the local controllerâ€™s current pawn and parry attribute on each maintenance check, rather than waiting for old objects to become invalid.
 - Preserve the configured factor across player, attribute, and controller replacements; avoid compounding when a new pawn shares the previous attribute.
 - Avoid restoring a stale baseline over values already reset by the game during loading.
 - Log the configuration file path at startup to help identify which INI was loaded.

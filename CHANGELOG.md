@@ -2,7 +2,8 @@
 
 ## Pending changes
 
-- Add optional dodgeInterruptsGuard, disabled by default, and saved easierparry dodge on/off commands.
+- Add optional dodgeInterruptsGuard and saved easierparry dodge on/off commands.
+- Enable dodgeInterruptsGuard in the supplied INI; retain the off fallback when the key is absent.
 - Release the locally controlled player's active guard before the normal dodge activation attempt, without overriding dodge eligibility or its result.
 - Resolve the request's player directly to avoid stale references across loading and possession changes.
 - Retain v1.0.8 startup-only settings and saved console selections.

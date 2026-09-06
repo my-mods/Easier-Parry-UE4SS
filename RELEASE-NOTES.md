@@ -6,7 +6,7 @@ Adds an optional setting that releases active guard when the player attempts a d
 
 ## Enable the option
 
-The default is off. Run `easierparry dodge on` in the UE4SS console to enable and save it, or set `dodgeInterruptsGuard = true` under `[General]` in EasierParryUE4SS.ini and restart. `easierparry dodge off` disables and saves the option. `easierparry status` reports the option and hook status. The master `enabled` setting controls both features. The parry factor stays unchanged.
+The supplied INI now contains `dodgeInterruptsGuard = true`. An absent setting still defaults to off. Run `easierparry dodge on` in the UE4SS console to enable and save it, or set `dodgeInterruptsGuard = true` under `[General]` in EasierParryUE4SS.ini and restart. `easierparry dodge off` disables and saves the option. `easierparry status` reports the option and hook status. The master `enabled` setting controls both features. The parry factor stays unchanged.
 
 Guard is dropped for the dodge attempt; release and press guard again to raise it afterward. Normal dodge eligibility, stamina and animation checks still apply. An unsuccessful attempt can also lower guard. The feature follows the game's dodge action and uses no fixed keyboard/controller keys.
 

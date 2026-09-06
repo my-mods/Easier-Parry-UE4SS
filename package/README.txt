@@ -7,7 +7,7 @@ Makes parrying more forgiving in The Blood of Dawnwalker by multiplying Coen's p
 - Caches the player and parry attribute; healthy checks do not scan game objects.
 - Checks once per second by default and writes only when the value changes.
 - Reacquires invalid player/attribute references after loading or recreation.
-- Optional dodge interruption of active guard, disabled by default.
+- Optional dodge interruption of active guard, enabled in the supplied INI.
 
 Installation
 
@@ -32,7 +32,7 @@ enabled = true
 factor = 2.0
 pollMilliseconds = 1000
 debugLogging = false
-dodgeInterruptsGuard = false
+dodgeInterruptsGuard = true
 
 The INI is read once when the game starts. Its factor stays selected until you change it through the console or exit the game. Death and save loading do not reload settings. Missing settings use their defaults; factor defaults to 2.0.
 
@@ -42,7 +42,7 @@ For direct INI edits, restart the game to load them. UTF-8 files with or without
 
 Dodge interrupts guard
 
-Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. It is off by default. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
+Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The supplied INI enables it; if the setting is absent, it remains off. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
 
 The option drops guard; release and press guard again to raise it afterward. A dodge attempt still follows the game's normal eligibility, stamina and animation rules, so an unsuccessful attempt can also leave guard lowered. No keys are hardcoded, so the feature follows the game's dodge action with keyboard or remapped controller controls. Live gameplay validation is pending.
 

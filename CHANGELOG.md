@@ -2,8 +2,12 @@
 
 ## Pending changes
 
+- Split shipped EasierParryUE4SS.defaults.ini from personal overrides under %LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini; never package or overwrite the user file on updates.
+- Read defaults then user settings at startup; console commands save only changed user keys.
+- Create a commented personal reference only when absent, or migrate a still-present legacy INI without replacing existing user settings.
+
 - Add optional dodgeInterruptsGuard and saved easierparry dodge on/off commands.
-- Enable dodgeInterruptsGuard in the supplied INI; retain the off fallback when the key is absent.
+- Enable dodgeInterruptsGuard in the shipped defaults; a personal false override disables it.
 - Release the locally controlled player's active guard before the normal dodge activation attempt, without overriding dodge eligibility or its result.
 - Resolve the request's player directly to avoid stale references across loading and possession changes.
 - Retain v1.0.8 startup-only settings and saved console selections.

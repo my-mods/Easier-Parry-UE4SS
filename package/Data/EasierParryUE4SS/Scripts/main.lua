@@ -6,6 +6,7 @@
 
 local MOD_NAME = "EasierParryUE4SS"
 local INI_NAME = "EasierParryUE4SS.ini"
+local DEFAULTS_NAME = "EasierParryUE4SS.defaults.ini"
 local PLAYER_CLASS = "DawnwalkerPlayerCharacter"
 local ATTRIBUTE_SET_FIELD = "CharDevAttributeSet"
 local ATTRIBUTE_FIELD = "ParryWindowMultiplier"
@@ -45,27 +46,59 @@ local function ParseBoolean(value)
     return nil
 end
 
-local function IniPath()
+local function ScriptIniPath(name)
     local source = (SCRIPT_SOURCE or ""):gsub("^@", "")
     local directory = string.match(source, "^(.*)[/\\][^/\\]*$")
-    if directory ~= nil and directory ~= "" then return directory .. "/" .. INI_NAME end
-    return "ue4ss/Mods/" .. MOD_NAME .. "/Scripts/" .. INI_NAME
+    if directory ~= nil and directory ~= "" then return directory .. "/" .. name end
+    return "ue4ss/Mods/" .. MOD_NAME .. "/Scripts/" .. name
 end
 
-local function LoadConfig()
-    local path = IniPath()
-    local file = io.open(path, "r")
-    if file == nil then
-        Log("WARNING: cannot open %s; keeping factor=%.3f, enabled=%s", path, config.factor, tostring(config.enabled))
-        return false
-    end
-    local contents = file:read("*a")
-    file:close()
-    if contents == nil then
-        Log("WARNING: cannot read %s; keeping current settings", path)
-        return false
-    end
+local function IniPath()
+    local directory = os.getenv("LOCALAPPDATA")
+    if not directory or not (directory:match("^%a:[/\\]") or directory:match("^\\\\")) then return nil end
+    return directory:gsub("[/\\]+$", "") .. "/Dawnwalker/Saved/Config/" .. INI_NAME
+end
 
+local function ReadIni(path)
+    local file, err, code = io.open(path, "rb")
+    if not file then return nil, err, code end
+    local contents, readError = file:read("*a")
+    file:close()
+    return contents, readError
+end
+
+-- Windows rename refuses an existing destination, including a file created
+-- after the initial read. Startup must never replace personal settings.
+local function CreateUserIni(path, contents)
+    if package.config:sub(1, 1) ~= "\\" then return nil, "Windows is required" end
+    local ok, token = pcall(os.tmpname)
+    if not ok then return nil, token end
+    os.remove(token)
+    local basename = token:match("([^/\\]+)$")
+    if not basename then return nil, "Invalid temporary filename" end
+    local temporary = path .. "." .. basename .. ".tmp"
+    local file, err = io.open(temporary, "a+b")
+    if not file then return nil, err end
+    if file:seek("end") ~= 0 then
+        file:close()
+        return nil, "Temporary file already occupied"
+    end
+    local written, writeError = file:write(contents)
+    local closed, closeError = file:close()
+    if not written or not closed then
+        os.remove(temporary)
+        return nil, writeError or closeError
+    end
+    local renamed, renameError = os.rename(temporary, path)
+    if not renamed then
+        os.remove(temporary)
+        local existing, existingError = ReadIni(path)
+        return existing, existingError or renameError
+    end
+    return contents
+end
+
+local function ApplyIni(contents, path)
     -- Editors may save a UTF-8 BOM before the first section header.
     contents = contents:gsub("^\239\187\191", "")
     local section = ""
@@ -87,7 +120,7 @@ local function LoadConfig()
                 elseif key == "factor" or key == "pollmilliseconds" then
                     local parsed = tonumber(value)
                     if parsed == nil or parsed ~= parsed or math.abs(parsed) == math.huge then
-                        Log("WARNING: invalid %s in %s; keeping its default", key, path)
+                        Log("WARNING: invalid %s in %s; keeping the inherited value", key, path)
                     elseif key == "factor" then
                         config.factor = math.max(0.1, math.min(50.0, parsed))
                     else
@@ -98,6 +131,46 @@ local function LoadConfig()
         end
     end
     Log("Loaded configuration from %s (factor=%.3f, enabled=%s)", path, config.factor, tostring(config.enabled))
+    return true
+end
+
+local function LoadConfig()
+    local defaultsPath = ScriptIniPath(DEFAULTS_NAME)
+    local defaults, defaultsError = ReadIni(defaultsPath)
+    if defaults == nil then
+        Log("WARNING: cannot read shipped defaults %s: %s", defaultsPath, tostring(defaultsError))
+        return false
+    end
+    ApplyIni(defaults, defaultsPath)
+    local path = IniPath()
+    if path == nil then
+        Log("WARNING: LOCALAPPDATA unavailable; personal settings cannot be located")
+        return false
+    end
+    local personal, err, code = ReadIni(path)
+    if personal == nil and code == 2 then
+        local legacy, legacyError, legacyCode = ReadIni(ScriptIniPath(INI_NAME))
+        if legacy == nil and legacyCode ~= 2 then
+            Log("WARNING: cannot read legacy INI for migration: %s", tostring(legacyError))
+            return false
+        end
+        local initial = legacy or table.concat({
+            "; Personal Easier Parry settings - preserved across mod updates.",
+            "; Only uncomment settings you want to override, then restart the game.",
+            "; Omitted settings inherit EasierParryUE4SS.defaults.ini from the mod.",
+            "; Console commands update only the settings they change in this file.",
+            "", "[General]", "; enabled = true", "; factor = 2.0",
+            "; pollMilliseconds = 1000", "; debugLogging = false",
+            "; dodgeInterruptsGuard = true", "",
+        }, "\n")
+        personal, err = CreateUserIni(path, initial)
+        if personal ~= nil then Log("Personal INI ready at %s", path) end
+    end
+    if personal == nil then
+        Log("WARNING: cannot read/create personal INI %s: %s. Ensure Saved/Config exists, then restart; personal settings were not replaced.", path, tostring(err))
+        return false
+    end
+    ApplyIni(personal, path)
     return true
 end
 
@@ -140,8 +213,9 @@ local function SetIniValue(contents, key, value)
     end))
 end
 
-local function SaveConfig(saveDodge)
+local function SaveConfig(keys)
     local path = IniPath()
+    if not path then Log("WARNING: personal INI path unavailable; settings remain active for this session"); return false end
     -- Read only to preserve unrelated edits; these bytes never replace session settings.
     local file, _, code = io.open(path, "rb")
     local contents = ""
@@ -155,9 +229,10 @@ local function SaveConfig(saveDodge)
         Log("WARNING: could not read %s for saving; settings remain active for this session", path)
         return false
     end
-    contents = SetIniValue(contents, "factor", string.format("%.17g", config.factor))
-    contents = SetIniValue(contents, "enabled", tostring(config.enabled))
-    if saveDodge then contents = SetIniValue(contents, "dodgeinterruptsguard", tostring(config.dodgeInterruptsGuard)) end
+    for _, key in ipairs(keys) do
+        local value = key == "factor" and string.format("%.17g", config[key]) or tostring(config[key])
+        contents = SetIniValue(contents, string.lower(key), value)
+    end
     file = io.open(path, "wb")
     if file == nil then
         Log("WARNING: could not save %s; settings remain active for this session", path)
@@ -169,7 +244,7 @@ local function SaveConfig(saveDodge)
         Log("WARNING: saving %s failed; settings remain active for this session", path)
         return false
     end
-    Log("Saved factor=%.3f, enabled=%s to %s", config.factor, tostring(config.enabled), path)
+    Log("Saved %s to %s", table.concat(keys, ", "), path)
     return true
 end
 
@@ -450,7 +525,7 @@ local function Tick()
     if not ok then RecordFailure("runtime error: " .. tostring(reason)) end
 end
 
-LoadConfig()
+if not LoadConfig() then return end
 if config.enabled and config.dodgeInterruptsGuard then EnsureDodgeHook() end
 
 if RegisterConsoleCommandHandler ~= nil then
@@ -469,7 +544,7 @@ if RegisterConsoleCommandHandler ~= nil then
                 config.dodgeInterruptsGuard = previous
                 return true
             end
-            SaveConfig(true)
+            SaveConfig({"dodgeInterruptsGuard"})
             Log("dodgeInterruptsGuard=%s (mod enabled=%s)", tostring(value), tostring(config.enabled))
             return true
         end
@@ -496,7 +571,7 @@ if RegisterConsoleCommandHandler ~= nil then
             RestoreBaseline()
             config.enabled = false
             Log("Disabled")
-            SaveConfig()
+            SaveConfig({"enabled"})
             return true
         end
 
@@ -504,7 +579,7 @@ if RegisterConsoleCommandHandler ~= nil then
             config.enabled = true
             if config.dodgeInterruptsGuard then EnsureDodgeHook() end
             Log("Enabled")
-            SaveConfig()
+            SaveConfig({"enabled"})
             return true
         end
 
@@ -520,7 +595,7 @@ if RegisterConsoleCommandHandler ~= nil then
             config.enabled = true
             if config.dodgeInterruptsGuard then EnsureDodgeHook() end
             Log("Using factor %.3f", config.factor)
-            SaveConfig()
+            SaveConfig({"factor", "enabled"})
             return true
         end
 

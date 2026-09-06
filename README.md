@@ -9,7 +9,7 @@ Makes parrying more forgiving in *The Blood of Dawnwalker* by multiplying Coen's
 - Caches the player and parry attribute; healthy checks do not scan game objects.
 - Checks once per second by default and writes only when the value changes.
 - Reacquires invalid player/attribute references after loading or recreation.
-- Optional dodge interruption of active guard, enabled in the supplied INI.
+- Optional dodge interruption of active guard, enabled in the shipped defaults.
 
 ## Installation
 
@@ -21,32 +21,37 @@ The ZIP includes Vortex metadata, the changelog, and release notes. Nexus listin
 
 For updates, close the game and replace/reinstall the existing mod entry from the new ZIP, then deploy through Vortex. Use the UE4SS (Lua mods) type. Keep one enabled Easier Parry entry.
 
-The ZIP includes the full EasierParryUE4SS.ini. Back up custom preferences before replacement and reapply them afterward; settings are not automatically merged. The default pollMilliseconds is 1000.
+The ZIP ships EasierParryUE4SS.defaults.ini only. Your personal EasierParryUE4SS.ini is stored under %LOCALAPPDATA%/Dawnwalker/Saved/Config, outside Vortex's deployment, and is not included in updates.
 
-To uninstall, disable/remove the mod in Vortex, deploy, and restart the game.
+To uninstall, disable/remove the mod in Vortex, deploy, and restart the game. Your personal INI remains available for reinstalling; delete it yourself only if you want to reset your preferences.
 
 ## Configuration
 
-Edit `EasierParryUE4SS/Scripts/EasierParryUE4SS.ini`:
+Personal settings live here:
+
+`%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini`
+
+The mod reads the shipped EasierParryUE4SS.defaults.ini first, then applies your personal overrides. Omitted/commented keys inherit the current defaults. Existing user files are never rewritten at startup. Updates replace only shipped defaults; explicit user overrides continue to win.
+
+A first launch creates a user INI with commented examples if it is missing. Edit only the settings you want to override, for example:
 
 ```ini
 [General]
-enabled = true
-factor = 2.0
-pollMilliseconds = 1000
-debugLogging = false
 dodgeInterruptsGuard = true
+factor = 3.0
 ```
 
-The INI is read once when the game starts. Its factor stays selected until you change it through the console or exit the game. Death and save loading do not reload settings. Missing settings use their defaults; factor defaults to 2.0.
+Shipped defaults are enabled = true, factor = 2.0, pollMilliseconds = 1000, debugLogging = false, and dodgeInterruptsGuard = true. The factor range remains 0.1 to 50.0. All settings can be overridden under [General].
 
-Console changes are saved to the same INI for the next game start. Factor and enabled are saved by the existing commands; dodge commands also save dodgeInterruptsGuard. Other settings and comments are preserved. If saving fails, the new selection remains active for the current session and the log reports the failure.
+The two files are loaded once at startup. Restart after direct INI edits; death and save loading do not reread them. UTF-8 files with or without a BOM are supported. Invalid numeric overrides keep their inherited value. If the personal file cannot be read or created, the mod logs the path and stops until the problem is fixed and the game restarted; it never falls back to writing a Vortex-managed INI.
 
-For direct INI edits, restart the game to load them. UTF-8 files with or without a BOM are supported.
+Console commands save only the settings they change in the personal file: a numeric factor also enables the mod, on/off changes enabled, and dodge on/off changes dodgeInterruptsGuard. Comments, unrelated keys and sections are preserved. A failed save leaves the selection active for the session and logs the failure. Shipped defaults are never written by the mod.
+
+When upgrading from an older package with an editable INI inside the mod, copy that file to the personal path before replacement if no user file exists. The mod also copies a legacy INI on first startup if it is still present and no user file exists. An existing personal file always takes precedence.
 
 ## Dodge interrupts guard
 
-Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The supplied INI enables it; if the setting is absent, it remains off. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
+Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The shipped defaults enable it; a personal false override disables it. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] in your personal INI and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
 
 The option drops guard; release and press guard again to raise it afterward. A dodge attempt still follows the game's normal eligibility, stamina and animation rules, so an unsuccessful attempt can also leave guard lowered. No keys are hardcoded, so the feature follows the game's dodge action with keyboard or remapped controller controls. Live gameplay validation is pending.
 

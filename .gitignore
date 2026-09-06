@@ -14,3 +14,6 @@ AGENTS.md
 /publish*
 /reapply*
 *.log
+
+# Personal and legacy INIs must never be packaged as defaults.
+**/EasierParryUE4SS.ini

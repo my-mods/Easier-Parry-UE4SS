@@ -16,7 +16,7 @@ recreated or the game recalculates the attribute.
 [list]
 [*]2x parry timing window by default.
 [*]Configurable multiplier from 0.1x to 50x.
-[*]Optional dodge interruption of active guard, enabled in the supplied INI.
+[*]Optional dodge interruption of active guard, enabled in the shipped defaults.
 [*]Preserves the live vanilla or difficulty-adjusted baseline.
 [*]Caches player/attribute references and checks once per second by default.
 [*]No global object searches or redundant writes while the cache is healthy.
@@ -41,12 +41,16 @@ Install the downloaded ZIP through Vortex, then enable and deploy it.
 
 For updates, close the game, replace/reinstall the existing entry through Vortex,
 then deploy. Use [b]UE4SS (Lua mods)[/b] and keep one enabled Easier Parry entry.
-The ZIP replaces the full INI: back up and reapply custom preferences.
+The ZIP replaces only EasierParryUE4SS.defaults.ini. Personal overrides live outside Vortex deployment under %LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini and are not included in the archive.
 Use [code]pollMilliseconds = 1000[/code] for the new default interval.
 
 [b]Configuration[/b]
 
-Edit [code]EasierParryUE4SS\Scripts\EasierParryUE4SS.ini[/code]:
+Edit [code]%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini[/code]. The mod reads shipped defaults first, then user overrides; omitted/commented keys inherit defaults. An existing personal file is not rewritten at startup. On first launch, a missing file is created with commented examples.
+
+For older installations, copy the old INI to this personal path before replacing the Vortex entry if no user INI exists. Automatic legacy migration is also supported when the old file is still present on startup.
+
+Example settings:
 
 [code]
 [General]
@@ -64,14 +68,14 @@ dodgeInterruptsGuard = true
 [*][code]3.0[/code] triples the timing window.
 [/list]
 
-The INI is read once at game startup. The selected factor stays active until you
+Defaults and personal overrides are read once at game startup. The selected factor stays active until you
 change it through the console or exit the game. Death and save loading do not
 reload settings. Missing settings use their defaults; factor defaults to 2.0.
 Restart the game after direct INI edits. UTF-8 files with or without a BOM work.
 
 [b]Dodge interrupts guard[/b]
 
-Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The supplied INI enables it; if the setting is absent, it remains off. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
+Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The shipped defaults enable it; a personal false override disables it. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] in your personal INI and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
 
 The option drops guard; release and press guard again to raise it afterward. A dodge attempt still follows the game's normal eligibility, stamina and animation rules, so an unsuccessful attempt can also leave guard lowered. No keys are hardcoded, so the feature follows the game's dodge action with keyboard or remapped controller controls. Live gameplay validation is pending.
 
@@ -86,9 +90,7 @@ easierparry dodge on
 easierparry dodge off
 [/code]
 
-The number command selects a multiplier and enables the mod. Number and on/off
-commands save factor and enabled to the same INI for the next game start,
-preserving other settings and comments. Dodge commands also save dodgeInterruptsGuard. If saving fails, the selection remains
+The number command saves factor and enabled to your personal INI. On/off saves only enabled; dodge commands save only dodgeInterruptsGuard. Other settings and comments are preserved, and shipped defaults are never written. If saving fails, the selection remains
 active for the current session and the log reports the failure.
 
 [b]Logging and verification[/b]
@@ -111,7 +113,7 @@ Coen's [code]ParryWindowMultiplier[/code].
 
 [b]Uninstallation[/b]
 
-Disable or remove the mod through Vortex, deploy, then restart the game.
+Disable or remove the mod through Vortex, deploy, then restart the game. Your personal INI remains for later use.
 
 [b]Credits and permissions[/b]
 

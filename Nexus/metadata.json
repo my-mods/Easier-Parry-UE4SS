@@ -1,6 +1,6 @@
 {
   "name": "Easier Parry - UE4SS",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "game": "The Blood of Dawnwalker",
   "nexusDomain": "thebloodofdawnwalker",
   "summary": "Configurable parry timing with optional dodge interruption of guard.",
@@ -25,9 +25,9 @@
   ],
   "fileName": "Easier-Parry-UE4SS.zip",
   "fileDisplayName": "Easier Parry - UE4SS",
-  "fileDescription": "Configurable parry timing, doubled by default, with optional dodge interruption of guard. Requires UE4SS. Install as UE4SS (Lua mods) through Vortex. Gameplay validation pending.",
+  "fileDescription": "Adds dodge interruption of guard and personal settings that survive updates. Requires UE4SS. Copy custom legacy INI settings to the personal path before upgrading. Dodge gameplay validation pending.",
   "sourceUrl": "https://github.com/my-mods/Easier-Parry-UE4SS",
-  "nexusModId": null,
+  "nexusModId": 161,
   "nexusFileId": null,
   "license": "MIT"
 }

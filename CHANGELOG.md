@@ -1,18 +1,13 @@
 # Changes
 
-## Pending changes
+## 1.1.0 — 2026-09-06
 
-- Split shipped EasierParryUE4SS.defaults.ini from personal overrides under %LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini; never package or overwrite the user file on updates.
-- Read defaults then user settings at startup; console commands save only changed user keys.
-- Create a commented personal reference only when absent, or migrate a still-present legacy INI without replacing existing user settings.
-
-- Add optional dodgeInterruptsGuard and saved easierparry dodge on/off commands.
-- Enable dodgeInterruptsGuard in the shipped defaults; a personal false override disables it.
-- Release the locally controlled player's active guard before the normal dodge activation attempt, without overriding dodge eligibility or its result.
-- Resolve the request's player directly to avoid stale references across loading and possession changes.
-- Retain v1.0.8 startup-only settings and saved console selections.
-- Guard must be raised again after interruption; failed dodge attempts can also lower guard.
-- Development update: simulated Lua and package checks pass; live guard/dodge validation is pending.
+- Add optional dodge interruption of guard, enabled by default. Release and press guard again afterward; normal dodge restrictions still apply.
+- Separate shipped defaults from a personal INI in %LOCALAPPDATA%/Dawnwalker/Saved/Config, so updates preserve user overrides. Copy custom legacy settings there before upgrading if no personal file exists.
+- Load settings once at startup and save console changes to the personal INI while preserving comments and unrelated settings. Direct INI edits require a restart.
+- Support UTF-8 INIs with or without a BOM and log configuration errors without overwriting unreadable user files.
+- Keep Nexus listing materials outside the Vortex ZIP; retain the README, license, changelog, release notes and Vortex metadata. Shorten the mod description and add the GitHub source link.
+- Lua, Windows file-I/O and Vortex package checks pass. Live gameplay validation, including the new dodge option, remains pending.
 
 ## 1.0.8 — 2026-09-06
 

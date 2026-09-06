@@ -1,124 +1,42 @@
-[center][size=5][b]Easier Parry - UE4SS[/b][/size]
-[i]A configurable, lightweight way to make parrying more forgiving.[/i][/center]
-
-[b]Overview[/b]
-
-Easier Parry multiplies Coen's live parry timing window. It uses the value from
-the running game as its baseline, so current difficulty adjustments are
-preserved instead of being replaced with a fixed timing value.
-
-The default multiplier is [b]2x[/b]. You can configure any value from 0.1x to
-50x, and the mod automatically reapplies the setting when the player is
-recreated or the game recalculates the attribute.
+[b]Easier Parry - UE4SS[/b]
+More forgiving parries, with an optional dodge that interrupts guard.
 
 [b]Features[/b]
-
 [list]
-[*]2x parry timing window by default.
-[*]Configurable multiplier from 0.1x to 50x.
-[*]Optional dodge interruption of active guard, enabled in the shipped defaults.
-[*]Preserves the live vanilla or difficulty-adjusted baseline.
-[*]Caches player/attribute references and checks once per second by default.
-[*]No global object searches or redundant writes while the cache is healthy.
-[*]Reacquires invalid references after loading or recreation.
-[*]No PAK replacements or IoStore file conflicts.
-[*]Optional diagnostic logging, disabled by default.
-[*]UE4SS console commands to view, change and save the selected settings.
+[*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.
+[*]Dodge can release guard automatically, so you can attempt a dodge while holding guard. Enabled by default; easy to turn off.
+[*]Personal settings stay separate from the mod and survive updates.
 [/list]
+After a dodge attempt, release and press guard again to raise it. Normal stamina and dodge restrictions still apply; a failed attempt can also lower guard. [b]The new dodge option still needs in-game validation.[/b]
 
-[b]Requirements[/b]
+[b]Installation[/b]
+Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]UE4SS (Lua mods)[/b] if prompted, then enable and deploy.
 
-[list]
-[*]The Blood of Dawnwalker on PC.
-[*]A working Dawnwalker-compatible UE4SS 3.x installation.
-[/list]
+For manual installation, copy Data/EasierParryUE4SS from the ZIP into:
+[code]The Blood of Dawnwalker/Dawnwalker/Binaries/Win64/ue4ss/Mods[/code]
 
-Targets Steam build 25129649 / executable CL-257186. Lua and package checks pass; live guard/dodge and frame-time validation remain pending.
-
-[b]Vortex installation[/b]
-
-Install the downloaded ZIP through Vortex, then enable and deploy it.
-
-For updates, close the game, replace/reinstall the existing entry through Vortex,
-then deploy. Use [b]UE4SS (Lua mods)[/b] and keep one enabled Easier Parry entry.
-The ZIP replaces only EasierParryUE4SS.defaults.ini. Personal overrides live outside Vortex deployment under %LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini and are not included in the archive.
-Use [code]pollMilliseconds = 1000[/code] for the new default interval.
-
-[b]Configuration[/b]
-
-Edit [code]%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini[/code]. The mod reads shipped defaults first, then user overrides; omitted/commented keys inherit defaults. An existing personal file is not rewritten at startup. On first launch, a missing file is created with commented examples.
-
-For older installations, copy the old INI to this personal path before replacing the Vortex entry if no user INI exists. Automatic legacy migration is also supported when the old file is still present on startup.
-
-Example settings:
-
-[code]
-[General]
-enabled = true
+[b]Settings[/b]
+On first launch, the mod creates your personal INI here:
+[code]%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini[/code]
+Add the settings you want to override under [General], then restart the game:
+[code][General]
 factor = 2.0
-pollMilliseconds = 1000
-debugLogging = false
-dodgeInterruptsGuard = true
-[/code]
+dodgeInterruptsGuard = true[/code]
+Use factor = 1.0 for vanilla parry timing, or dodgeInterruptsGuard = false to disable guard interruption. The shipped EasierParryUE4SS.defaults.ini supplies any omitted settings; updates do not replace your personal file.
 
-[list]
-[*][code]1.0[/code] is vanilla timing.
-[*][code]1.5[/code] gives 50 percent more time.
-[*][code]2.0[/code] doubles the timing window.
-[*][code]3.0[/code] triples the timing window.
-[/list]
-
-Defaults and personal overrides are read once at game startup. The selected factor stays active until you
-change it through the console or exit the game. Death and save loading do not
-reload settings. Missing settings use their defaults; factor defaults to 2.0.
-Restart the game after direct INI edits. UTF-8 files with or without a BOM work.
-
-[b]Dodge interrupts guard[/b]
-
-Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The shipped defaults enable it; a personal false override disables it. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] in your personal INI and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
-
-The option drops guard; release and press guard again to raise it afterward. A dodge attempt still follows the game's normal eligibility, stamina and animation rules, so an unsuccessful attempt can also leave guard lowered. No keys are hardcoded, so the feature follows the game's dodge action with keyboard or remapped controller controls. Live gameplay validation is pending.
-
-[b]Console commands[/b]
-
-[code]
-easierparry status
-easierparry off
-easierparry on
-easierparry 3
+UE4SS console shortcuts apply immediately and save your choice:
+[code]easierparry 3
 easierparry dodge on
-easierparry dodge off
-[/code]
+easierparry dodge off[/code]
+Use easierparry on/off to enable/disable both features, or easierparry status to check settings. Direct INI edits require a restart.
 
-The number command saves factor and enabled to your personal INI. On/off saves only enabled; dodge commands save only dodgeInterruptsGuard. Other settings and comments are preserved, and shipped defaults are never written. If saving fails, the selection remains
-active for the current session and the log reports the failure.
+[b]Updating and removing[/b]
+Before upgrading from an older version, copy Scripts/EasierParryUE4SS.ini from the old mod to the personal path above if you have custom settings and no personal file yet. Close the game, replace/reinstall the same Vortex entry, and deploy. Keep one enabled entry.
 
-[b]Logging and verification[/b]
+To uninstall, remove the mod through Vortex and deploy, or delete only its EasierParryUE4SS folder for a manual install. Personal settings remain.
 
-The mod logs the loaded INI path and factor at startup, followed by an
-[code]Applied[/code] message when it attaches to the player attribute. Continuous diagnostic logging is disabled by
-default and can be enabled with [code]debugLogging = true[/code].
+[b]Compatibility and source[/b]
+No game assets are replaced. Other mods changing parry timing or guard/dodge behavior may conflict.
 
-After loading a save, check:
-
-[code]The Blood of Dawnwalker\Dawnwalker\Binaries\Win64\ue4ss\UE4SS.log[/code]
-
-Look for an entry beginning with [code][EasierParryUE4SS] Applied x2.000[/code].
-
-[b]Compatibility[/b]
-
-Easier Parry replaces no packaged game assets, so it has no PAK or IoStore file
-conflicts. It may conflict with another runtime mod that continuously changes
-Coen's [code]ParryWindowMultiplier[/code].
-
-[b]Uninstallation[/b]
-
-Disable or remove the mod through Vortex, deploy, then restart the game. Your personal INI remains for later use.
-
-[b]Credits and permissions[/b]
-
-Created by [b]oOCamilleOo[/b]. Licensed under MIT. You may inspect, modify,
-translate, bundle, and redistribute the Lua source with attribution and the
-included license. No runtime game assets are included. The promotional thumbnail
-uses an official in-game screenshot, copyright Rebel Wolves and Bandai Namco
-Entertainment; that imagery is not covered by the mod's MIT license.
+[url=https://github.com/my-mods/Easier-Parry-UE4SS]Source code on GitHub[/url]
+Created by [b]oOCamilleOo[/b]. Lua source is licensed under [b]MIT[/b]; modification and redistribution are allowed with attribution and the included license.

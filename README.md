@@ -2,72 +2,58 @@
 
 ![Easier Parry - UE4SS](Nexus/thumbnail.png)
 
-Makes parrying more forgiving in *The Blood of Dawnwalker* by multiplying Coen's parry timing window.
+Makes parrying more forgiving in *The Blood of Dawnwalker* and preserves held guard through attacks and dodges.
 
-- **2× timing window** by default, configurable from **0.1× to 50×**.
-- Uses the game's current, difficulty-adjusted timing as its baseline.
-- Caches the player and parry attribute; healthy checks do not scan game objects.
-- Checks once per second by default and writes only when the value changes.
-- Reacquires invalid player/attribute references after loading or recreation.
-- Optional dodge interruption of active guard, enabled in the shipped defaults.
+- **2× parry timing window** by default, configurable from **0.1× to 50×**, using the game's difficulty-adjusted baseline.
+- Keeps the guard input ability alive while guard is held. Attacking no longer discards that held input.
+- Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
+- Native guard handling uses gameplay events, with no added polling, Lua hooks, object searches or recovery timers.
+- The timing checker caches the player and attribute, checks once per second by default and writes only when needed.
 
 ## Installation
 
-Requires a Dawnwalker-compatible **UE4SS 3.x** installation.
+Requires a Dawnwalker-compatible **UE4SS 3.x** installation. Import `Easier-Parry-UE4SS.zip` into Vortex, select **Root (game folder)**, then enable and deploy. Keep one enabled Easier Parry entry.
 
-Download the mod ZIP from [Releases](https://github.com/my-mods/Easier-Parry-UE4SS/releases), install it through Vortex, then enable and deploy.
+The package contains both native game assets and the UE4SS timing script. Both are required. `Data` contains only an installer layout note; the payload uses explicit paths under `Dawnwalker`.
 
-The ZIP includes Vortex metadata, the changelog, and release notes. Nexus listing materials are maintained separately in the repository’s [Nexus folder](Nexus/README.txt).
+For updates, close the game, disable the old entry and deploy, then replace/reinstall that entry through the installer using **Root (game folder)** and deploy again. Reinstalling is necessary when changing from the older UE4SS mod type; redeploying its stored layout alone is insufficient.
 
-For updates, close the game and replace/reinstall the existing mod entry from the new ZIP, then deploy through Vortex. Use the UE4SS (Lua mods) type. Keep one enabled Easier Parry entry.
+Your personal INI remains outside Vortex deployment and is not replaced. If upgrading from an old editable INI inside the mod, copy your custom settings to the personal path below before replacement if no personal file exists.
 
-The ZIP ships EasierParryUE4SS.defaults.ini only. Your personal EasierParryUE4SS.ini is stored under %LOCALAPPDATA%/Dawnwalker/Saved/Config, outside Vortex's deployment, and is not included in updates.
-
-To uninstall, disable/remove the mod in Vortex, deploy, and restart the game. Your personal INI remains available for reinstalling; delete it yourself only if you want to reset your preferences.
+To uninstall, disable/remove the entry in Vortex, deploy and restart the game. Personal settings remain available for reinstalling.
 
 ## Configuration
 
-Personal settings live here:
+Personal settings: `%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini`
 
-`%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini`
-
-The mod reads the shipped EasierParryUE4SS.defaults.ini first, then applies your personal overrides. Omitted/commented keys inherit the current defaults. Existing user files are never rewritten at startup. Updates replace only shipped defaults; explicit user overrides continue to win.
-
-A first launch creates a user INI with commented examples if it is missing. Edit only the settings you want to override, for example:
+The mod reads `EasierParryUE4SS.defaults.ini` first, then personal overrides. Omitted or commented keys inherit the shipped defaults. A missing personal file is created with commented examples; an existing one is not rewritten at startup. UTF-8 files with or without a BOM are supported.
 
 ```ini
 [General]
-dodgeInterruptsGuard = true
 factor = 3.0
 ```
 
-Shipped defaults are enabled = true, factor = 2.0, pollMilliseconds = 1000, debugLogging = false, and dodgeInterruptsGuard = true. The factor range remains 0.1 to 50.0. All settings can be overridden under [General].
+Defaults are `enabled = true`, `factor = 2.0`, `pollMilliseconds = 1000` and `debugLogging = false`. Restart after direct INI edits. Loading saves and respawning do not reread configuration. Invalid numeric overrides retain inherited values. An unreadable personal file stops script initialization and logs the path without overwriting preferences.
 
-The two files are loaded once at startup. Restart after direct INI edits; death and save loading do not reread them. UTF-8 files with or without a BOM are supported. Invalid numeric overrides keep their inherited value. If the personal file cannot be read or created, the mod logs the path and stops until the problem is fixed and the game restarted; it never falls back to writing a Vortex-managed INI.
+**The native guard fixes are always active while the mod is installed.** `enabled` and the console on/off commands control only the timing multiplier. The former `dodgeInterruptsGuard` option is retired and ignored; its existing INI entry is preserved. Disable the complete mod in Vortex to restore stock guard behavior.
 
-Console commands save only the settings they change in the personal file: a numeric factor also enables the mod, on/off changes enabled, and dodge on/off changes dodgeInterruptsGuard. Comments, unrelated keys and sections are preserved. A failed save leaves the selection active for the session and logs the failure. Shipped defaults are never written by the mod.
+Console commands apply immediately and save only the selected timing settings, preserving comments and unrelated keys:
 
-When upgrading from an older package with an editable INI inside the mod, copy that file to the personal path before replacement if no user file exists. The mod also copies a legacy INI on first startup if it is still present and no user file exists. An existing personal file always takes precedence.
+- `easierparry status` — show timing settings and native guard information.
+- `easierparry 3` — select a 3× multiplier and enable timing changes.
+- `easierparry off` / `easierparry on` — disable/enable timing changes.
 
-## Dodge interrupts guard
-
-Enable dodgeInterruptsGuard to release active guard just before a normal dodge attempt. The shipped defaults enable it; a personal false override disables it. Use easierparry dodge on to enable it immediately, or set dodgeInterruptsGuard = true under [General] in your personal INI and restart. Use easierparry dodge off to restore vanilla behavior. The toggle is saved and does not change the parry factor. The master enabled setting controls both features.
-
-Guard is released only for the dodge activation request, then the held guard intent is restored. Keep holding guard to resume blocking when the game's combat rules allow it; failed dodge attempts also restore that intent. Releasing guard, losing possession, dying or changing worlds prevents stale recovery. Normal dodge eligibility, stamina and animation rules still apply. No keys are hardcoded, so keyboard and remapped controller controls are supported.
-
-Guard recovery runs only during a dodge request, with no added timer, input polling or global object searches. It caches ownership only until that request returns. The existing parry attribute check is unchanged.
-
-## Console commands
-
-- `easierparry status` — show the selected factor, baseline, target timing and dodge option status.
-- `easierparry 3` — select a 3× multiplier, enable the mod and save the selection.
-- `easierparry off` / `easierparry on` — disable/enable the mod and save the selection.
-- `easierparry dodge on` / `easierparry dodge off` — enable/disable and save guard interruption.
-
-To check that the mod is active, load a save and look for `[EasierParryUE4SS] Applied` in `ue4ss/UE4SS.log`.
+A failed save retains the selection for the session and logs the error. Shipped defaults are never written by the script. Look for `[EasierParryUE4SS] Applied` in `ue4ss/UE4SS.log` to confirm timing application; that message does not verify native asset loading.
 
 ## Compatibility
 
-Targets Steam build **25129649 / CL-257186**. Replaces no game assets; may conflict with other mods that alter guard/dodge behavior or change `ParryWindowMultiplier`.
+Native assets are based on Steam build **25129649 / CL-257186**. Updates to these game assets require compatibility review. The mod replaces:
 
-Created by **oOCamilleOo**. [MIT license](LICENSE).
+- `/Game/_Dawnwalker/Player/Abilities/Input/GA_Input_CombatBlock`
+- `/Game/_Dawnwalker/Combat/Abilities/Dodge/GA_Dodge`
+
+Controller Tweaks and Remap changes different assets and can remain enabled. Other mods replacing either ability or modifying `ParryWindowMultiplier` may conflict. Do not assume differently named containers avoid asset conflicts; select one implementation of each ability.
+
+The guard correction targets guard held before an attack or dodge. Normal stamina, dodge animation and combat eligibility logic are retained. Compiled ability-flow regressions and package checks pass; in-game combat and frame-time validation remain pending.
+
+Created by **oOCamilleOo**. Original mod code is under the [MIT license](LICENSE); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in [Nexus](Nexus/README.txt).

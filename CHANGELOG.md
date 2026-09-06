@@ -2,9 +2,12 @@
 
 ## Pending changes
 
-- Restore held guard after a dodge request, including failed attempts, so directional parrying does not require releasing and pressing guard again.
-- Respect guard releases and player/world changes during the request.
-- Recover guard without additional timers, input polling or object searches.
+- Preserve the held block-input ability through attacks instead of ending it and losing guard until the next press.
+- Use native dodge-lifetime suppression and automatic cleanup to resume held guard, replacing the Lua dodge workaround.
+- Keep a fixed set of three guard listeners; bypass the attack-release listener chain that otherwise accumulates during a continuous hold.
+- Package native abilities and the timing script together as Root (game folder). Updates from the old UE4SS type require reinstalling through Vortex's installer.
+- Retire dodgeInterruptsGuard without rewriting personal INIs. Native guard fixes are always active while installed; enabled/on/off now control only timing.
+- Retain version metadata pending a requested release. Native runtime and frame-time validation remain pending.
 
 ## 1.1.1 — 2026-09-06
 

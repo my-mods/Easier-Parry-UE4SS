@@ -1,42 +1,39 @@
 [b]Easier Parry - UE4SS[/b]
-More forgiving parries, with an optional dodge that interrupts guard.
+More forgiving parries, with held guard preserved through attacks and dodges.
 
 [b]Features[/b]
 [list]
 [*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.
-[*]Dodge can release guard automatically, so you can attempt a dodge while holding guard. Enabled by default; easy to turn off.
-[*]Personal settings stay separate from the mod and survive updates.
+[*]Attacks no longer end the held guard-input ability. Dodge temporarily lowers guard and resumes it when combat rules allow, including failed attempts.
+[*]Native guard handling uses gameplay events with no added polling, Lua guard hooks or recovery timers.
+[*]Personal timing settings stay separate from the mod and survive updates.
 [/list]
-Keep holding guard to resume blocking after a dodge; failed dodge attempts also preserve held guard. Releasing guard cancels recovery. Normal stamina and combat restrictions still apply. Recovery adds no timer or input polling.
+Actual guard release and ability cancellation still end guarding. Normal stamina and dodge animation logic remain unchanged. The fix targets guard held before the action. In-game combat and frame-time validation remain pending.
 
-[b]Installation[/b]
-Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]UE4SS (Lua mods)[/b] if prompted, then enable and deploy.
+[b]Installation and updates[/b]
+Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]Root (game folder)[/b], then enable and deploy. Both the native assets and Lua timing script are required.
 
-For manual installation, copy Data/EasierParryUE4SS from the ZIP into:
-[code]The Blood of Dawnwalker/Dawnwalker/Binaries/Win64/ue4ss/Mods[/code]
+For updates from the older UE4SS package, close the game, disable the old entry and deploy. Replace/reinstall that entry through the installer as Root (game folder), then enable and deploy. Redeployment alone keeps the old installer layout. Keep one enabled entry. Personal settings are not replaced.
 
 [b]Settings[/b]
-On first launch, the mod creates your personal INI here:
+Your personal INI is created on first launch:
 [code]%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini[/code]
-Add the settings you want to override under [General], then restart the game:
+Add overrides under [General], then restart:
 [code][General]
-factor = 2.0
-dodgeInterruptsGuard = true[/code]
-Use factor = 1.0 for vanilla parry timing, or dodgeInterruptsGuard = false to disable guard interruption. The shipped EasierParryUE4SS.defaults.ini supplies any omitted settings; updates do not replace your personal file.
+factor = 2.0[/code]
+Use factor = 1.0 for vanilla timing. Omitted settings inherit shipped defaults.
 
-UE4SS console shortcuts apply immediately and save your choice:
+[b]Native guard fixes are always active while installed.[/b] The old dodgeInterruptsGuard setting is ignored and the dodge console toggle is retired. enabled and easierparry on/off control only timing. Existing personal INI entries are preserved.
+
+UE4SS console shortcuts apply immediately and save timing choices:
 [code]easierparry 3
-easierparry dodge on
-easierparry dodge off[/code]
-Use easierparry on/off to enable/disable both features, or easierparry status to check settings. Direct INI edits require a restart.
-
-[b]Updating and removing[/b]
-Before upgrading from an older version, copy Scripts/EasierParryUE4SS.ini from the old mod to the personal path above if you have custom settings and no personal file yet. Close the game, replace/reinstall the same Vortex entry, and deploy. Keep one enabled entry.
-
-To uninstall, remove the mod through Vortex and deploy, or delete only its EasierParryUE4SS folder for a manual install. Personal settings remain.
+easierparry off
+easierparry on
+easierparry status[/code]
+To uninstall or restore stock guard behavior, disable/remove the mod through Vortex, deploy and restart. Personal settings remain.
 
 [b]Compatibility and source[/b]
-No game assets are replaced. Other mods changing parry timing or guard/dodge behavior may conflict.
+Targets Steam build 25129649 / CL-257186. Replaces GA_Input_CombatBlock and GA_Dodge. Other mods replacing either ability, or changing parry timing, may conflict. Controller Tweaks and Remap changes different assets and can remain enabled.
 
 [url=https://github.com/my-mods/Easier-Parry-UE4SS]Source code on GitHub[/url]
-Created by [b]oOCamilleOo[/b]. Lua source is licensed under [b]MIT[/b]; modification and redistribution are allowed with attribution and the included license.
+Created by [b]oOCamilleOo[/b]. Original mod code is licensed under MIT; underlying game assets remain the property of their respective rights holders.

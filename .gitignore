@@ -17,3 +17,6 @@ AGENTS.md
 
 # Personal and legacy INIs must never be packaged as defaults.
 **/EasierParryUE4SS.ini
+
+/build-native.py
+/package/Dawnwalker/Content/Paks/

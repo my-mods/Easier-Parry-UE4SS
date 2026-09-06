@@ -1,0 +1,1 @@
+Install as Root (game folder) through Vortex. Native guard assets and UE4SS timing files are under Dawnwalker/. This note is not a game file.

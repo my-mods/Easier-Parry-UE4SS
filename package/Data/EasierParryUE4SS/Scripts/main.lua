@@ -17,7 +17,7 @@ local config = {
     factor = 2.0,
     pollMilliseconds = 1000,
     debugLogging = false,
-    dodgeInterruptsGuard = false,
+    dodgeInterruptsGuard = false, -- Legacy INI compatibility; native guard assets own this behavior.
 }
 
 local active = nil
@@ -161,7 +161,7 @@ local function LoadConfig()
             "; Console commands update only the settings they change in this file.",
             "", "[General]", "; enabled = true", "; factor = 2.0",
             "; pollMilliseconds = 1000", "; debugLogging = false",
-            "; dodgeInterruptsGuard = true", "",
+            "; Guard recovery is native and always active; the old dodge option is ignored.", "",
         }, "\n")
         personal, err = CreateUserIni(path, initial)
         if personal ~= nil then Log("Personal INI ready at %s", path) end
@@ -265,122 +265,8 @@ local function IsDefaultObject(object)
     return string.find(SafeName(object), "Default__", 1, true) ~= nil
 end
 
--- Guard release belongs only to the synchronous native dodge request. Restore
--- its held intent on return, including failed attempts; the native setter still
--- enforces combat-state eligibility. Never retain player objects between requests.
-local dodgeHookInstalled = false
-local dodgeHookIds = {}
-local dodgeFrames, dodgeOverflow = {}, 0
-local ownGuardWrite = nil
-local dodgeWarnings = {}
-local function DodgeWarning(phase, reason)
-    if dodgeWarnings[phase] then return end
-    dodgeWarnings[phase] = true
-    Log("WARNING: dodge guard %s failed: %s", phase, tostring(reason))
-end
-
-local function SameObject(object, address)
-    return IsLive(object) and object:GetAddress() == address
-end
-
-local function WriteGuard(frame, value)
-    -- Consume this marker in the setter's pre-hook, rather than suppressing the
-    -- entire call: a reentrant release from the game must still win.
-    ownGuardWrite = frame.address
-    local ok, reason = pcall(function() frame.combat:SetDesiredBlockState(value) end)
-    ownGuardWrite = nil
-    if not ok then error(reason) end
-end
-
-local function ObserveGuard(context)
-    if #dodgeFrames == 0 then return end
-    local ok, reason = pcall(function()
-        local combat = context and context:get()
-        if not IsLive(combat) then return end
-        local address = combat:GetAddress()
-        if ownGuardWrite == address then ownGuardWrite = nil; return end
-        for _, frame in ipairs(dodgeFrames) do
-            if frame.address == address then frame.changed = true end
-        end
-    end)
-    if not ok then
-        -- An unreadable intervening write cannot safely be overwritten.
-        for _, frame in ipairs(dodgeFrames) do frame.changed = true end
-        DodgeWarning("observation", reason)
-    end
-end
-
-local function BeforeDodge(context)
-    -- Bound even pathological recursive requests, while keeping pre/post pairs.
-    if #dodgeFrames >= 8 then dodgeOverflow = dodgeOverflow + 1; return end
-    local frame = {}
-    dodgeFrames[#dodgeFrames + 1] = frame
-    if not dodgeHookInstalled or not config.enabled or not config.dodgeInterruptsGuard then return end
-    local ok, reason = pcall(function()
-        local combat = context and context:get()
-        if not IsLive(combat) then return end
-        local player = combat:GetCharacter()
-        -- Possession excludes NPCs, remote players and default objects without
-        -- constructing full object names. Cache ownership for this call only.
-        if not IsLive(player) or not player:IsPlayerControlled() or not player:IsLocallyControlled()
-            or not combat:IsAlive() or not combat:IsBlocking() or not combat:WantsToBlock() then return end
-        local controller, world = player:GetController(), player:GetWorld()
-        if not IsLive(controller) or not IsLive(world) then return end
-        frame.combat, frame.player = combat, player
-        frame.address, frame.playerAddress = combat:GetAddress(), player:GetAddress()
-        frame.controllerAddress, frame.worldAddress = controller:GetAddress(), world:GetAddress()
-        -- Record before writing so a setter error after mutation still gets cleanup.
-        frame.restore = true
-        WriteGuard(frame, false)
-    end)
-    if not ok then DodgeWarning("release", reason) end
-    -- Return nothing: never replace native dodge eligibility or its result.
-end
-
-local function AfterDodge(context)
-    if dodgeOverflow > 0 then dodgeOverflow = dodgeOverflow - 1; return end
-    local frame = dodgeFrames[#dodgeFrames]
-    dodgeFrames[#dodgeFrames] = nil
-    if not frame or not frame.restore or frame.changed then return end
-    local ok, reason = pcall(function()
-        local combat = context and context:get()
-        if not SameObject(combat, frame.address) or not IsLive(frame.combat)
-            or not SameObject(combat:GetCharacter(), frame.playerAddress) then return end
-        local player = frame.player
-        if not IsLive(player) or not player:IsPlayerControlled() or not player:IsLocallyControlled()
-            or not SameObject(player:GetController(), frame.controllerAddress)
-            or not SameObject(player:GetWorld(), frame.worldAddress) or not combat:IsAlive() then return end
-        if not combat:WantsToBlock() then WriteGuard(frame, true) end
-    end)
-    if not ok then DodgeWarning("restore", reason) end
-    -- All cached references expire here. No timer, delayed work or input polling.
-end
-
-local function EnsureDodgeHook()
-    if dodgeHookInstalled then return true end
-    if not config.dodgeInterruptsGuard then return false end
-    if RegisterHook == nil then
-        Log("WARNING: dodge guard interruption unavailable: RegisterHook is missing")
-        return false
-    end
-    local ok, reason = pcall(function()
-        if not dodgeHookIds.guard then
-            local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:SetDesiredBlockState", ObserveGuard)
-            dodgeHookIds.guard = {preId, postId}
-        end
-        if not dodgeHookIds.dodge then
-            local preId, postId = RegisterHook("/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility", BeforeDodge, AfterDodge)
-            dodgeHookIds.dodge = {preId, postId}
-        end
-    end)
-    if not ok then
-        Log("WARNING: could not register dodge guard interruption: %s", tostring(reason))
-        return false
-    end
-    dodgeHookInstalled = true
-    Log("Dodge guard interruption hook ready")
-    return true
-end
+-- Guard input and dodge suspension are handled by the native ability assets.
+-- This script only maintains the configurable parry timing attribute.
 
 local function NearlyEqual(left, right)
     return type(left) == "number" and type(right) == "number"
@@ -602,31 +488,18 @@ local function Tick()
 end
 
 if not LoadConfig() then return end
-if config.enabled and config.dodgeInterruptsGuard then EnsureDodgeHook() end
 
 if RegisterConsoleCommandHandler ~= nil then
     RegisterConsoleCommandHandler("easierparry", function(fullCommand, parameters, ar)
         local command = string.lower(tostring(parameters[1] or "status"))
 
         if command == "dodge" then
-            local value = ParseBoolean(parameters[2])
-            if value == nil then
-                Log("Use easierparry dodge on | off (current=%s)", tostring(config.dodgeInterruptsGuard))
-                return true
-            end
-            local previous = config.dodgeInterruptsGuard
-            config.dodgeInterruptsGuard = value
-            if value and not EnsureDodgeHook() then
-                config.dodgeInterruptsGuard = previous
-                return true
-            end
-            SaveConfig({"dodgeInterruptsGuard"})
-            Log("dodgeInterruptsGuard=%s (mod enabled=%s)", tostring(value), tostring(config.enabled))
+            Log("Guard recovery now uses native game abilities and is always active while this mod is installed. The old dodge toggle is retired; your personal INI is preserved.")
             return true
         end
 
         if command == "status" then
-            Log("dodgeInterruptsGuard=%s hookReady=%s", tostring(config.dodgeInterruptsGuard), tostring(dodgeHookInstalled))
+            Log("Native held-guard fixes are supplied by the installed game assets; enabled controls the timing multiplier only.")
             if active ~= nil then
                 Log(
                     "enabled=%s factor=%.3f baseline=%.4f/%.4f target=%.4f/%.4f",
@@ -646,15 +519,14 @@ if RegisterConsoleCommandHandler ~= nil then
         if command == "off" then
             RestoreBaseline()
             config.enabled = false
-            Log("Disabled")
+            Log("Parry timing disabled; native guard fixes remain active.")
             SaveConfig({"enabled"})
             return true
         end
 
         if command == "on" then
             config.enabled = true
-            if config.dodgeInterruptsGuard then EnsureDodgeHook() end
-            Log("Enabled")
+            Log("Parry timing enabled; native guard fixes remain active.")
             SaveConfig({"enabled"})
             return true
         end
@@ -669,13 +541,12 @@ if RegisterConsoleCommandHandler ~= nil then
             RestoreBaseline()
             config.factor = math.max(0.1, math.min(50.0, runtimeFactor))
             config.enabled = true
-            if config.dodgeInterruptsGuard then EnsureDodgeHook() end
             Log("Using factor %.3f", config.factor)
             SaveConfig({"factor", "enabled"})
             return true
         end
 
-        Log("Commands: easierparry status | on | off | <factor> | dodge on | dodge off")
+        Log("Commands: easierparry status | on | off | <factor>")
         return true
     end)
 end

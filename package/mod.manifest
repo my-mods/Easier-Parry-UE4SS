@@ -3,7 +3,7 @@
   <info>
     <name>Easier Parry - UE4SS</name>
     <modid>EasierParryUE4SS</modid>
-    <description>Configurable parry timing with guard recovery after dodging and attack cancellation of guard.</description>
+    <description>Configurable parry timing with guard recovery after dodging and base-game attack behavior.</description>
     <author>oOCamilleOo</author>
     <version>1.2.0</version>
     <created_on>2026-09-05</created_on>

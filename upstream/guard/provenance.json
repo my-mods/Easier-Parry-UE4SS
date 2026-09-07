@@ -13,7 +13,7 @@
       "snapshot": "GA_Input_CombatBlock.json",
       "package": "/Game/_Dawnwalker/Player/Abilities/Input/GA_Input_CombatBlock",
       "sha256": "422accd0648e3afec1c67cbd7f7a0deb8eaa31a1914c7d1a5b2cecebd8b3cf77",
-      "modification": "Keep three fixed held-guard listeners and native dodge suppression. Bind the light-attack listener to stock guard teardown, so attack ends guard until a fresh guard press. Bypass the old attack-release/next-press listener chain."
+      "modification": "None. Stock reference only; GA_Input_CombatBlock is not included in the mod container."
     },
     {
       "snapshot": "GA_Dodge.json",

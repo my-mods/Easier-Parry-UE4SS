@@ -2,10 +2,10 @@
 
 ![Easier Parry - UE4SS](Nexus/thumbnail.png)
 
-Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. A normal attack press cancels guard. Release and press guard again to restore it.
+Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 
 - **2× parry timing window** by default, configurable from **0.1× to 50×**, using the game's difficulty-adjusted baseline.
-- Keeps held guard available after a dodge, using the game's native ability lifecycle. A normal attack press cancels guard. Release and press guard again to restore it.
+- Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base game’s guard behavior.
 - Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
 - Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
 - The timing checker follows the current local player and attribute owner, checks once per second by default and writes only when needed. Save loading uses no global player-object searches.
@@ -14,7 +14,7 @@ Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guar
 
 Requires a Dawnwalker-compatible **UE4SS 3.x** installation. Import `Easier-Parry-UE4SS.zip` into Vortex, select **Root (game folder)**, then enable and deploy. Keep one enabled Easier Parry entry.
 
-The package contains both native game assets and the UE4SS timing script. Both are required. `Data` contains only an installer layout note; the payload uses explicit paths under `Dawnwalker`.
+The package contains the native dodge asset and the UE4SS timing script. Both are required. `Data` contains only an installer layout note; the payload uses explicit paths under `Dawnwalker`.
 
 For updates, close the game, disable the old entry and deploy, then replace/reinstall that entry through the installer using **Root (game folder)** and deploy again. Reinstalling is necessary when changing from the older UE4SS mod type; redeploying its stored layout alone is insufficient.
 
@@ -49,7 +49,7 @@ A failed save retains the selection for the session and logs the error. Shipped 
 
 Set `debugLogging = true` under `[General]` to capture guard tracing together with timing diagnostics. Both are off by default. The session commands `easierparry debug on/off` control both; turning off stops trace reads and queued output. Previously installed hooks remain dormant until logging is enabled again. The retired `guardTraceLogging` key is ignored. Diagnostics also work with timing changes disabled.
 
-Close the game, replace/reinstall the Vortex entry as **Root (game folder)** and deploy. Start the game, load a save, keep LT held, dodge repeatedly and check directional parrying afterward. Separately, attack while LT stays held, dodge during the attack, then release and repress LT to restore guard. If it fails, release and repress LT once. Exit the game before another launch overwrites `ue4ss/UE4SS.log`.
+Close the game, replace/reinstall the Vortex entry as **Root (game folder)** and deploy. Start the game, load a save, keep LT held, dodge repeatedly and check directional parrying afterward. Separately, test a single attack and a repeated attack while LT stays held, then dodge. If a stock attack transition ends guard, release and repress LT to restore it. If it fails, release and repress LT once. Exit the game before another launch overwrites `ue4ss/UE4SS.log`.
 
 Search that log for `GuardTrace`. The trace includes hook readiness/errors, ability identity and endings, suppression counts, guard intent, blocking state, the Block tag and raw LT. LT is a diagnostic read of the physical left trigger, not a binding change. `?` means a read was unavailable; `dropped` or `snapshot=rate_limited` identifies omitted burst data. Hook coverage is reported explicitly; ordinary timing application does not prove native assets loaded.
 
@@ -59,12 +59,11 @@ Trace output is buffered and bounded to 2,048 records per launch. It adds no inp
 
 Native assets are based on Steam build **25129649 / CL-257186**. Updates to these game assets require compatibility review. The mod replaces:
 
-- `/Game/_Dawnwalker/Player/Abilities/Input/GA_Input_CombatBlock`
 - `/Game/_Dawnwalker/Combat/Abilities/Dodge/GA_Dodge`
 
-Controller Tweaks and Remap changes different assets and can remain enabled. Other mods replacing either ability or modifying `ParryWindowMultiplier` may conflict. Do not assume differently named containers avoid asset conflicts; select one implementation of each ability.
+Controller Tweaks and Remap changes different assets and can remain enabled. Other mods replacing the dodge ability or modifying `ParryWindowMultiplier` may conflict. Do not assume differently named containers avoid asset conflicts; select one implementation of each ability.
 
-The guard correction targets guard held before a dodge. A normal attack press cancels guard. Release and press guard again to restore it. Dodge retains the game's native attack-interruption, stamina, animation and combat eligibility logic. The dodge asset matches the earlier build reported working for dodge and guard; the guard asset additionally ends guard on a normal attack press. Package and regression checks pass; confirmation of this replacement and live frame-time validation remain pending.
+The guard correction targets guard held before a dodge. The base game controls attack/combo handoffs and guard cancellation without an overridden guard ability. Dodge retains the game's native attack-interruption, stamina, animation and combat eligibility logic. If a stock attack transition ends guard, dodge completion cannot reactivate it; release and press guard again.
 
 Created by **oOCamilleOo**. Original mod code is under the [MIT license](LICENSE); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in [Nexus](Nexus/README.txt).
 

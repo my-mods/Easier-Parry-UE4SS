@@ -1,5 +1,9 @@
 # Changes
 
+## Unreleased
+
+- Restore the base game’s attack/combo guard behavior by removing the custom guard-input override. Keep native held-guard recovery after dodging.
+
 ## 1.2.0 — 2026-09-07
 
 - Restore held guard after dodging. Normal attacks cancel guard until guard is released and pressed again.

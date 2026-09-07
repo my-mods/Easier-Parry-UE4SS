@@ -1,5 +1,5 @@
 [b]Easier Parry - UE4SS[/b]
-More forgiving parries, with native held-guard recovery after dodging. A normal attack press cancels guard until you release and press guard again.
+More forgiving parries, with native held-guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 
 [b]Features[/b]
 [list]
@@ -7,12 +7,12 @@ More forgiving parries, with native held-guard recovery after dodging. A normal 
 [*]Held guard resumes after native dodge suppression ends, unless an attack or actual guard release has ended guarding.
 [*]Personal settings stay separate from the mod and survive updates.
 [/list]
-Normal dodge eligibility, stamina and animation rules remain in effect. Attacks cancel guard; attack release or a later dodge does not restore it. Release and press guard again to resume guarding.
+Normal dodge eligibility, stamina and animation rules remain in effect. Stock attack/combo transitions can still end guard; a later dodge does not reactivate an ended guard ability. Release and press guard again in that case.
 
 [b]Installation[/b]
 Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]Root (game folder)[/b], then enable and deploy.
 
-For manual installation, copy the ZIP's Dawnwalker folder into the game root, preserving all subfolders. Both native assets and the UE4SS timing script are required. Data contains only a package layout note.
+For manual installation, copy the ZIP's Dawnwalker folder into the game root, preserving all subfolders. The native dodge asset and the UE4SS timing script are both required. Data contains only a package layout note.
 
 [b]Settings[/b]
 On first launch, the mod creates your personal INI here:

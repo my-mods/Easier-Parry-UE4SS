@@ -1,15 +1,13 @@
-# Native held guard
+# Native dodge guard recovery
 
-These are modified cooked ability snapshots for Steam build 25129649 / CL-257186. Original snapshots and their provenance are in `upstream/guard`.
+The snapshots target Steam build 25129649 / CL-257186. Original assets and hashes are in `upstream/guard`.
 
-`GA_Input_CombatBlock` represents the lifetime of held guard input. Stock bytecode ends it after a successful light-attack handoff. A separate attack-release listener also creates a listener that ends it on the next attack press. Both paths destroy the guard tasks while `Player.Input.Block` remains present, leaving no new input edge to reactivate guarding.
+Only `GA_Dodge` is shipped in the native container. It adds the existing `Player.Input.BlockTagAbilities` tag to `ActivationOwnedTags`. The engine owns this suppression for the dodge ability’s lifetime and removes it on end or cancellation. All dodge executable exports, stamina checks and animation logic are unchanged.
 
-The modified graph keeps this input ability alive through dodges. It skips the successful handoff's `K2_EndAbility` and the attack-release listener chain. The existing light-attack listener now invokes the same stock teardown callback as guard release, ending the ability immediately without queuing a second attack. It remains alongside the existing block-release listener and `Player.Input.BlockTagAbilities` count listener: three tasks per hold. Actual block release and ability cancellation retain stock teardown. The untouched direction-selection helper still controls initial direction.
+`GA_Input_CombatBlock.json` is an unmodified stock reference, excluded from the container. The game’s own guard ability listens for suppression-count changes: it lowers desired guard while the count is nonzero and restores it when the count reaches zero, provided the ability is still active.
 
-`GA_Dodge` adds `Player.Input.BlockTagAbilities` to its `ActivationOwnedTags`. The engine owns this suppression for the ability's lifetime and removes it on end or cancellation. The existing block task lowers desired guard while the count is nonzero and raises it when suppression ends, provided the input ability remains active. Dodge executable exports, stamina checks and animation logic are unchanged.
+Stock attacks retain both original paths: a successful combo handoff ends guard immediately; an attack release arms a listener that ends guard on the next attack press. The release listener fires immediately if attack is absent when guard starts, so guard-first input also arms cancellation for the first attack. If attack is already held when guard starts and its combo handoff fails, guard remains active until a subsequent release/press or another stock cancellation. Actual guard release and ability cancellation retain stock teardown. Once guard has ended, dodge completion cannot restart it without a fresh guard input.
 
-The block bytecode replacements preserve runtime instruction offsets and existing entry points. The dodge edit changes only its default-object properties and adds the existing tag name. No Lua hooks, timers, retained Lua object references or object searches implement guard recovery.
+This implementation adds no guard bytecode, Lua hooks, timers or object searches. It leaves stock guard listener lifetimes intact. It conflicts with other replacements of `GA_Dodge`; a separate mod replacing guard input can change its response to the suppression tag.
 
-This changes the two whole cooked assets and therefore conflicts with other replacements of either asset. Offline bytecode-flow and container round-trip tests do not establish live game behavior or frame-time performance.
-
-A normal attack press ends guard even if LT remains held. Attack release and dodge completion cannot restore an ended guard ability; release and press guard again to restore it. Dodge uses the original native attack-interruption and eligibility path; no mod timer or forced animation cancellation is added.
+To reproduce the native payload, convert `src/guard/GA_Dodge.json` to a UE5.5 legacy asset using UAssetAPI-compatible JSON conversion, preserve its `/Game/_Dawnwalker/Combat/Abilities/Dodge/GA_Dodge` package path, and convert it to an UE5.5 IoStore container with retoc and the matching game script-object metadata. Do not include the stock guard reference in that container.

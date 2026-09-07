@@ -25,7 +25,7 @@
   ],
   "fileName": "Easier-Parry-UE4SS.zip",
   "fileDisplayName": "Easier Parry - UE4SS",
-  "fileDescription": "Prerelease: native guard recovery after dodging; attacks cancel guard until a fresh guard press. Includes save-load timing ownership fixes. Requires UE4SS. Reinstall through Vortex as Root (game folder); personal settings survive. Live validation pending.",
+  "fileDescription": "Native guard recovery after dodging; attacks cancel guard until a fresh guard press. Includes save-load timing ownership fixes.",
   "sourceUrl": "https://github.com/my-mods/Easier-Parry-UE4SS",
   "nexusModId": 161,
   "nexusFileId": null,

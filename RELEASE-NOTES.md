@@ -1,19 +1,15 @@
-# Easier Parry - UE4SS — Pending dodge restoration
+# Easier Parry - UE4SS — Pending attack cancels guard
 
-Restore the exact native guard and dodge assets from the development build reported working for dodge and blocking, before attack-from-guard changes. Remove the attack-press/release handoff that caused regressions. Release guard before attacking.
+A normal attack press now ends guard immediately, even while LT stays held. Guard stays off until LT is released and pressed again. Attack release does not restore guard, so it cannot cut off the attack animation through the previous recovery path.
 
-Held guard is suppressed for the native dodge ability's lifetime and restored when suppression ends, unless guard was released or the guard ability was cancelled. Three fixed native listeners handle this; no Lua gameplay hook, recovery timer, global search or per-frame mod worker is added. Dodge executable bytecode remains unchanged, preserving the game's native attack interruption, stamina checks and animation rules.
+The change redirects the existing light-attack listener to the stock guard teardown callback. It adds no listener, timer, object search, or per-frame work. The separate native attack input ability handles the attack normally; the guard ability no longer queues an additional attack. Three listeners remain per guard hold and all are removed by teardown.
 
-Keep the corrected, bounded read-only diagnostic module and current player/attribute ownership fix. guardTraceLogging=true remains enabled; set false in the personal INI and restart to disable it. Diagnostic workers stop when idle. Timing maintenance checks the current owned attribute once per second by default without repeated global searches; native guard recovery itself has no periodic work.
+Dodge behavior is preserved: a dodge while guarding restores held guard after native suppression ends, unless an attack or actual guard release has ended guarding. Dodge executable assets, eligibility, stamina and native attack interruption are unchanged. Current timing ownership fixes and bounded diagnostics are retained; guardTraceLogging remains true, while optional timing debug logging stays off by default.
 
-Replace/reinstall the existing Vortex entry as **Root (game folder)** and deploy. Keep one enabled Easier Parry entry. Controller Tweaks can remain enabled. Personal settings are preserved.
+Replace/reinstall the existing Vortex entry as **Root (game folder)** and deploy. Keep one enabled Easier Parry entry. Controller Tweaks can remain enabled. Personal INI settings are preserved.
 
-Checks cover exact native rollback bytes, cooked-asset round trips, 1,000 guard/dodge lifecycles, three fixed tasks, overlapping suppression, real guard release/cancellation, no guard reassertion after releasing LT to attack, diagnostic idle/flood limits, and current player ownership across loading/possession. Builds and mocks do not establish live animation behavior or frame times.
+Offline checks cover cooked-asset round trips, 1,000 guard/dodge cycles, 1,000 attack cancellations with LT held, attack/dodge overlap, fresh guard presses, fixed task counts, diagnostic idle/flood limits, and the current timing ownership code. These do not establish live animations or frame times.
 
-In game, hold LT and dodge repeatedly, checking directional parrying afterward. Then release LT, attack, and dodge during the attack. Also test releasing LT during a dodge. Retain ue4ss/UE4SS.log before the next launch if anything fails.
+Test holding LT and dodging, then holding LT and attacking. Guard should drop on attack and stay off after the attack button is released, including after a subsequent dodge. Release and press LT again to guard. Retain ue4ss/UE4SS.log before another launch if anything fails.
 
-Version stays 1.1.1. No release or tag is created.
-
-The timing script also follows the active viewport's local player and current attribute owner after save loading. Temporary unpossession and partial-write retries retain the captured baseline. At the default one-second interval, simulated idle and recovery tests perform no global player searches; steady state performs no attribute writes or configuration reads. These operation-count tests do not measure in-game frame times. After replacement, verify the configured factor over repeated save loads and death/respawn, and compare frame times with diagnostics disabled.
-
-Optional performance diagnostics are available through `easierparry debug on`, `debug status`, and `debug off`. They measure the timing worker and its queue delay, with millisecond clock granularity and bounded summary output. Debug logging remains disabled by default.
+Version remains 1.1.1. No release or tag is created.

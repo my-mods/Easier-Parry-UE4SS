@@ -144,7 +144,7 @@ return function(log)
     addScope('block', blockClass, {
         {'K2_ActivateAbility', 'block.activate'},
         {'K2_OnEndAbility', 'block.end', 'cancelled'},
-        {'Removed_8EB8A6B74BA524392159438191716079', 'block.input_removed'},
+        {'Removed_8EB8A6B74BA524392159438191716079', 'block.end_requested'},
         {'TagCountChanged_748E6D7442CECCD88071F2B6BAED63BF', 'block.suppression', 'count'},
         {'Added_9BE6EBD14C58975D3C81CC8B5B48D989', 'block.attack'},
         {'Added_D145CA7143BA7EB922BA8F97C939F64F', 'block.STOCK_next_attack_end'},

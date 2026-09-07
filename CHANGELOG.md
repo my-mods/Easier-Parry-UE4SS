@@ -2,18 +2,17 @@
 
 ## Pending changes
 
-- Restore the exact native guard/dodge assets from the earlier build reported working for dodge and blocking. Remove attack-press/release guard handoff changes.
-- Release guard before attacking. Dodge uses the original native attack-interruption path; no attack-recovery timer or forced animation cancellation is added.
+- A normal attack press now ends guard immediately. Guard stays off after attack release and dodge completion until the player releases and presses guard again.
 - Preserve three fixed guard listeners and native dodge-lifetime suppression. Actual guard release/cancellation prevents later guard restoration.
 - Retain bounded guardTraceLogging=true diagnostics with the one-shot worker fix, and retain the current player/attribute ownership correction across save loads.
 - Package native abilities and timing together as Root (game folder); preserve personal INI settings. Version metadata is unchanged.
-- Native asset round-trip, repeated dodge lifecycle, logging idle/flood and current player ownership tests pass. Live replacement confirmation and frame-time validation remain pending.
 
 - Add debug-only timing-worker duration, queue delay, lifecycle and error summaries with bounded output and session controls. Debug logging stays off by default.
 
 - Resolve parry timing through the active viewport's local player and recheck the attribute owner after loading or possession changes, including when old objects remain valid.
 - Preserve the captured baseline across temporary unpossession and partial-write retries. Release only values still matching the mod's override.
 - Keep player resolution and attribute checks bounded at the configured interval, without global searches during save-load recovery. Runtime frame-time validation remains pending.
+
 
 
 

@@ -3,7 +3,6 @@
 ## 1.2.1 — 2026-09-07
 
 - Restore vanilla attack/combo guard handling by removing the custom guard-input override.
-- Keep held-guard recovery after dodging with only the native dodge asset override.
 
 ## 1.2.0 — 2026-09-07
 

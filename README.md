@@ -47,7 +47,7 @@ A failed save retains the selection for the session and logs the error. Shipped 
 
 ## Held-guard diagnostics
 
-This investigation build ships `guardTraceLogging = true` under `[General]`. Personal overrides take precedence; set the same key to `false` and restart to disable all trace setup and hooks. This is separate from `debugLogging` and works with timing changes disabled.
+Set `debugLogging = true` under `[General]` to capture guard tracing together with timing diagnostics. Both are off by default. The session commands `easierparry debug on/off` control both; turning off stops trace reads and queued output. Previously installed hooks remain dormant until logging is enabled again. The retired `guardTraceLogging` key is ignored. Diagnostics also work with timing changes disabled.
 
 Close the game, replace/reinstall the Vortex entry as **Root (game folder)** and deploy. Start the game, load a save, keep LT held, dodge repeatedly and check directional parrying afterward. Separately, attack while LT stays held, dodge during the attack, then release and repress LT to restore guard. If it fails, release and repress LT once. Exit the game before another launch overwrites `ue4ss/UE4SS.log`.
 
@@ -74,4 +74,4 @@ Debug logging is off by default. Use `easierparry debug on` to start a session c
 
 `PERF` lines report timing-worker average and maximum duration, the phase with the largest sample, checks taking at least 5 ms, maximum queue delay, attachment/repair/wait counts and failures. Queue delay is time waiting for the game thread, not time spent executing this mod. When enabled from launch, the first sample covers bootstrap; automatic summaries follow every 30 seconds, or at most every 5 seconds when checks are slow, stopping after 120 automatic reports. Manual status remains available. No extra timer or object search is created.
 
-Timing uses Windows `os.clock`, with millisecond granularity. A zero measurement means below clock resolution. Measurements include calls made by the timing worker, but exclude its performance-summary logging, separate GuardTrace diagnostics, native guard abilities and whole-game/GPU frame time. Compare equivalent gameplay runs with other diagnostic logging disabled. With debug logging off, no performance clock is sampled and no PERF summary is emitted.
+Timing uses Windows `os.clock`, with millisecond granularity. A zero measurement means below clock resolution. Measurements include calls made by the timing worker, but exclude its performance-summary logging, GuardTrace diagnostics (reported separately from PERF durations), native guard abilities and whole-game/GPU frame time. Compare equivalent gameplay runs with other diagnostic logging disabled. With debug logging off, no performance clock is sampled and no PERF summary is emitted.

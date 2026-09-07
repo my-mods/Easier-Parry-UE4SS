@@ -4,7 +4,7 @@ A normal attack press now ends guard immediately, even while LT stays held. Guar
 
 The change redirects the existing light-attack listener to the stock guard teardown callback. It adds no listener, timer, object search, or per-frame work. The separate native attack input ability handles the attack normally; the guard ability no longer queues an additional attack. Three listeners remain per guard hold and all are removed by teardown.
 
-Dodge behavior is preserved: a dodge while guarding restores held guard after native suppression ends, unless an attack or actual guard release has ended guarding. Dodge executable assets, eligibility, stamina and native attack interruption are unchanged. Current timing ownership fixes and bounded diagnostics are retained; guardTraceLogging remains true, while optional timing debug logging stays off by default.
+Dodge behavior is preserved: a dodge while guarding restores held guard after native suppression ends, unless an attack or actual guard release has ended guarding. Dodge executable assets, eligibility, stamina and native attack interruption are unchanged. Current timing ownership fixes and bounded diagnostics are retained; the single debugLogging setting controls guard tracing and timing diagnostics, both off by default.
 
 Replace/reinstall the existing Vortex entry as **Root (game folder)** and deploy. Keep one enabled Easier Parry entry. Controller Tweaks can remain enabled. Personal INI settings are preserved.
 

@@ -16,7 +16,7 @@ Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for D
 For updates from the older UE4SS package, close the game, disable the old entry and deploy. Replace/reinstall that entry through the installer as Root (game folder), then enable and deploy. Redeployment alone keeps the old installer layout. Keep one enabled entry. Personal settings are not replaced.
 
 [b]Diagnostic build[/b]
-guardTraceLogging = true is enabled for this investigation. It records bounded GuardTrace events in ue4ss/UE4SS.log; set false in your personal INI and restart to disable. Keep LT held while testing dodges and directional parrying afterward. Attack while LT stays held, then test dodging during the attack. Guard should stay off until LT is released and pressed again. If anything fails, release/repress LT once and retain the log before another launch. Live combat and frame-time validation remain pending.
+debugLogging = false is the default. Set it to true for bounded GuardTrace events and timing diagnostics in ue4ss/UE4SS.log. The easierparry debug on/off commands control both for the current session. Keep LT held while testing dodges and directional parrying afterward. Attack while LT stays held, then test dodging during the attack. Guard should stay off until LT is released and pressed again. If anything fails, release/repress LT once and retain the log before another launch. Live combat and frame-time validation remain pending.
 
 [b]Settings[/b]
 Your personal INI is created on first launch:

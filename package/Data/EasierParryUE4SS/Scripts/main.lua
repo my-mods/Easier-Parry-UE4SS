@@ -16,7 +16,6 @@ local config = {
     factor = 2.0,
     pollMilliseconds = 1000,
     debugLogging = false,
-    guardTraceLogging = false,
     dodgeInterruptsGuard = false, -- Legacy INI compatibility; native guard assets own this behavior.
 }
 
@@ -113,10 +112,10 @@ local function ApplyIni(contents, path)
             local key, value = string.match(clean, "^([%w_]+)%s*=%s*(.-)%s*$")
             if key ~= nil then
                 key = string.lower(key)
-                if key == "enabled" or key == "debuglogging" or key == "guardtracelogging" or key == "dodgeinterruptsguard" then
+                if key == "enabled" or key == "debuglogging" or key == "dodgeinterruptsguard" then
                     local parsed = ParseBoolean(value)
                     if parsed ~= nil then
-                        local field = ({enabled="enabled", debuglogging="debugLogging", guardtracelogging="guardTraceLogging", dodgeinterruptsguard="dodgeInterruptsGuard"})[key]
+                        local field = ({enabled="enabled", debuglogging="debugLogging", dodgeinterruptsguard="dodgeInterruptsGuard"})[key]
                         config[field] = parsed
                     end
                 elseif key == "factor" or key == "pollmilliseconds" then
@@ -592,20 +591,32 @@ end)
 if not notified then
     Log("WARNING: engine replacement notification unavailable: %s", tostring(notifyError))
 end
-if config.guardTraceLogging then
-    local ok, err = pcall(function() dofile(ScriptIniPath("GuardTrace.lua"))(Log) end)
-    if not ok then Log("GuardTrace failed to initialize: %s", tostring(err)) end
+-- One diagnostics switch controls both timing summaries and guard tracing.
+local guardTraceControl
+local function SetGuardTracing(enabled)
+    if not enabled and not guardTraceControl then return end
+    local ok, err = pcall(function()
+        if guardTraceControl then
+            guardTraceControl(enabled)
+        elseif enabled then
+            guardTraceControl = dofile(ScriptIniPath("GuardTrace.lua"))(Log)
+        end
+    end)
+    if not ok then Log("GuardTrace failed: %s", tostring(err)) end
 end
+SetGuardTracing(config.debugLogging)
 
 local function HandleCommand(command, argument)
     if command == "debug" then
         if argument == "on" then
             config.debugLogging = true
+            SetGuardTracing(true)
             perf, queuedAt = nil, nil
             Log("Debug logging enabled for this session; PERF captures worker time and queue delay, not whole-game frame time")
         elseif argument == "off" then
             if config.debugLogging then PerfReport("final", PerfClock() or 0, false) end
             config.debugLogging = false
+            SetGuardTracing(false)
             perf, queuedAt = nil, nil
             Log("Debug logging disabled for this session")
         else

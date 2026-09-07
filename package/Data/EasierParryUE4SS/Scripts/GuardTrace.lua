@@ -1,5 +1,6 @@
 -- Read-only, event-driven held-guard diagnostics. MIT; see LICENSE.txt.
 return function(log)
+    local active = true
     local stopped, registered = false, {}
     local queue, head, sequence, dropped = {}, 1, 0, 0
     local flushing, installing = false, false
@@ -33,6 +34,7 @@ return function(log)
         if flushing then return end
         flushing = true
         runUntilDone(200, function()
+            if not active then queue, head, dropped, flushing = {}, 1, 0, false; return true end
             local lines = {}
             for _ = 1, dropped > 0 and 7 or 8 do
                 if head > #queue then break end
@@ -52,6 +54,7 @@ return function(log)
         end)
     end
     local function record(message)
+        if not active then return end
         if total >= MAX_RECORDS then stopped = true; return end
         if #queue - head + 1 >= MAX_QUEUE then dropped = dropped + 1; return end
         sequence, total = sequence + 1, total + 1
@@ -104,7 +107,7 @@ return function(log)
     end
     local function guarded(label, fn)
         return function(...)
-            if stopped then return end
+            if not active or stopped then return end
             local now = math.floor(os.clock() * 10)
             if now ~= eventWindow then eventWindow, events = now, 0 end
             if events >= 32 then dropped = dropped + 1; return end
@@ -176,7 +179,7 @@ return function(log)
     local nativeIndex = 1
     local function schedule(name, reset)
         local scope = scopes[name]
-        if stopped or scope.queued then return end
+        if not active or stopped or scope.queued then return end
         if reset then scope.attempts, scope.next, scope.done = 0, 1, false end
         if scope.done then return end
         if scope.attempts >= 2 then return end
@@ -185,10 +188,10 @@ return function(log)
         wake()
     end
     wake = function()
-        if stopped or installing then return end
+        if not active or stopped or installing then return end
         installing = true
         runUntilDone(100, function()
-            if stopped then installing = false; return true end
+            if not active or stopped then installing = false; return true end
             if not constantsAttempted then
                 constantsAttempted = true
                 local ok, err = pcall(function()
@@ -241,5 +244,18 @@ return function(log)
         if not ok then record('NOTIFY_UNAVAILABLE ' .. scope.class .. ' ' .. tostring(err)) end
         schedule(name, false)
     end
-    log('GuardTrace enabled: read-only trace GT2; native transition snapshots, raw LT and input tags. Limit 2048 records; restart after setting guardTraceLogging=false to disable.')
+    log('GuardTrace enabled: read-only trace GT2; native transition snapshots, raw LT and input tags. Limit 2048 records; controlled by debugLogging and easierparry debug on/off.')
+    -- Keep installed hooks dormant while off; their guards return before clocks
+    -- or UObject access. Pending one-shots drain without output or rescheduling.
+    return function(enabled)
+        if active == enabled then return end
+        active = enabled
+        queue, head, dropped = {}, 1, 0
+        if not active then return end
+        stopped, total, sequence = false, 0, 0
+        window, samples, eventWindow, events = -1, 0, -1, 0
+        for name in pairs(scopes) do schedule(name, true) end
+        wake()
+    end
+
 end

@@ -83,3 +83,5 @@
 
 - Generate Vortex display name, version, and description in the release archive.
 - Preserve the existing ZIP filename and runtime payloads. Reinstall/replace through Vortex to read metadata.
+
+- Use debugLogging for both timing diagnostics and guard tracing; default both off and apply session debug on/off to both. Retire guardTraceLogging.

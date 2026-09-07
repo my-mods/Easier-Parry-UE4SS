@@ -6,11 +6,20 @@ return function(log)
     local window, samples, total = -1, 0, 0
     local eventWindow, events = -1, 0
     local failedReads, notified = {}, {}
-    local combatClass, abilityLibrary, blockTag, gateTag, ltKey
+    local combatClass, abilityLibrary, blockTag, gateTag, attackTag, ltKey
     local constantsAttempted = false
     local MAX_RECORDS, MAX_QUEUE, MAX_SNAPSHOTS = 2048, 64, 8
     local scopes, jobs = {}, {}
     local wake
+
+    -- Delayed-action loops ignore callback return values in this UE4SS build.
+    -- Use one-shot callbacks and schedule another only while work remains.
+    local function runUntilDone(delay, step)
+        local function run()
+            if step() ~= true then ExecuteInGameThreadWithDelay(delay, run) end
+        end
+        ExecuteInGameThreadWithDelay(delay, run)
+    end
 
     local function live(object)
         return object ~= nil and object:IsValid()
@@ -23,7 +32,7 @@ return function(log)
     local function flush()
         if flushing then return end
         flushing = true
-        LoopInGameThreadWithDelay(200, function()
+        runUntilDone(200, function()
             local lines = {}
             for _ = 1, dropped > 0 and 7 or 8 do
                 if head > #queue then break end
@@ -88,6 +97,7 @@ return function(log)
             if live(asc) then
                 text = text .. " blockTag=" .. read("blockTag", function() return asc:HasMatchingGameplayTag(blockTag) end)
                     .. " gateTag=" .. read("gateTag", function() return asc:HasMatchingGameplayTag(gateTag) end)
+                    .. " attackTag=" .. read("attackTag", function() return asc:HasMatchingGameplayTag(attackTag) end)
             else text = text .. " ASC=unavailable" end
         end
         record(text)
@@ -138,7 +148,7 @@ return function(log)
         {'TagCountChanged_748E6D7442CECCD88071F2B6BAED63BF', 'block.suppression', 'count'},
         {'Added_9BE6EBD14C58975D3C81CC8B5B48D989', 'block.attack'},
         {'Added_D145CA7143BA7EB922BA8F97C939F64F', 'block.STOCK_next_attack_end'},
-        {'Removed_996F0E954925C2383CBAD78F9EBEFB3A', 'block.STOCK_attack_release'},
+        {'Removed_996F0E954925C2383CBAD78F9EBEFB3A', 'block.attack_release'},
     })
     addScope('dodge', dodgeClass, {{'K2_ActivateAbility', 'dodge.activate'}, {'K2_OnEndAbility', 'dodge.end', 'cancelled'}})
     for _, name in ipairs({'Light', 'Heavy'}) do
@@ -177,7 +187,7 @@ return function(log)
     wake = function()
         if stopped or installing then return end
         installing = true
-        LoopInGameThreadWithDelay(100, function()
+        runUntilDone(100, function()
             if stopped then installing = false; return true end
             if not constantsAttempted then
                 constantsAttempted = true
@@ -186,6 +196,7 @@ return function(log)
                     abilityLibrary = StaticFindObject('/Script/GameplayAbilities.Default__AbilitySystemBlueprintLibrary')
                     blockTag = {TagName=FName('Player.Input.Block')}
                     gateTag = {TagName=FName('Player.Input.BlockTagAbilities')}
+                    attackTag = {TagName=FName('Player.Input.LightAttack')}
                     ltKey = {KeyName=FName('Gamepad_LeftTriggerAxis')}
                 end)
                 if not ok then record('SETUP_ERROR ' .. tostring(err)) end
@@ -217,7 +228,7 @@ return function(log)
             return true
         end)
     end
-    if type(LoopInGameThreadWithDelay) ~= 'function' or type(RegisterHook) ~= 'function'
+    if type(ExecuteInGameThreadWithDelay) ~= 'function' or type(RegisterHook) ~= 'function'
         or type(NotifyOnNewObject) ~= 'function' then
         log('GuardTrace unavailable: this UE4SS build lacks required event APIs.'); return
     end
@@ -230,5 +241,5 @@ return function(log)
         if not ok then record('NOTIFY_UNAVAILABLE ' .. scope.class .. ' ' .. tostring(err)) end
         schedule(name, false)
     end
-    log('GuardTrace enabled: read-only trace GT1; native transition snapshots, raw LT and input tags. Limit 2048 records; restart after setting guardTraceLogging=false to disable.')
+    log('GuardTrace enabled: read-only trace GT2; native transition snapshots, raw LT and input tags. Limit 2048 records; restart after setting guardTraceLogging=false to disable.')
 end

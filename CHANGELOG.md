@@ -2,15 +2,14 @@
 
 ## Pending changes
 
-- Investigate the persisting held-guard failure after confirming the previous build is deployed. Native correction remains insufficient in game.
-- Add guardTraceLogging=true for read-only, bounded transition diagnostics; trace raw LT, input tags, ability lifecycle and guard intent/state without changing gameplay.
-
-- Preserve the held block-input ability through attacks instead of ending it and losing guard until the next press.
-- Use native dodge-lifetime suppression and automatic cleanup to resume held guard, replacing the Lua dodge workaround.
-- Keep a fixed set of three guard listeners; bypass the attack-release listener chain that otherwise accumulates during a continuous hold.
+- Preserve the held block-input ability through attacks instead of losing guard until the next LT press.
+- Lower desired guard before the stock attack handoff. The previous correction left it raised, preventing attacks from blocking state.
+- Restore held guard on attack release only after dodge suppression also ends; use four fixed native listeners without accumulating tasks.
+- Use native dodge-lifetime suppression and automatic cleanup, replacing the Lua dodge workaround.
+- Add guardTraceLogging=true for bounded, read-only transition diagnostics. Use one-shot delayed callbacks so setup and buffered logging stop when idle.
 - Package native abilities and the timing script together as Root (game folder). Updates from the old UE4SS type require reinstalling through Vortex's installer.
-- Retire dodgeInterruptsGuard without rewriting personal INIs. Native guard fixes are always active while installed; enabled/on/off now control only timing.
-- Retain version metadata pending a requested release. Native runtime and frame-time validation remain pending.
+- Retire dodgeInterruptsGuard without rewriting personal INIs. Native guard fixes are always active while installed; enabled/on/off control only timing.
+- The player reports dodge and blocking now working. The latest attack correction passes offline regression and package checks; live combat and frame-time validation remain pending. Version metadata is unchanged.
 
 ## 1.1.1 — 2026-09-06
 

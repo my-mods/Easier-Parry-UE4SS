@@ -25,7 +25,7 @@
   ],
   "fileName": "Easier-Parry-UE4SS.zip",
   "fileDisplayName": "Easier Parry - UE4SS",
-  "fileDescription": "Diagnostic development build: held guard still fails in game. Read-only guardTraceLogging is enabled to investigate input and ability transitions. Requires UE4SS; reinstall through Vortex as Root (game folder). Version unchanged; no new release.",
+  "fileDescription": "Development build: correct attack handoff while keeping LT held, with read-only guardTraceLogging enabled. Requires UE4SS; replace through Vortex as Root (game folder). Live validation pending. Version unchanged; no new release.",
   "sourceUrl": "https://github.com/my-mods/Easier-Parry-UE4SS",
   "nexusModId": 161,
   "nexusFileId": null,

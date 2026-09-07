@@ -67,3 +67,11 @@ Controller Tweaks and Remap changes different assets and can remain enabled. Oth
 The guard correction targets guard held before an attack or dodge. Normal stamina, dodge animation and combat eligibility logic are retained. Compiled ability-flow regressions and package checks pass. In-game attack recovery and frame-time validation remain pending.
 
 Created by **oOCamilleOo**. Original mod code is under the [MIT license](LICENSE); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in [Nexus](Nexus/README.txt).
+
+## Timing performance diagnostics
+
+Debug logging is off by default. Use `easierparry debug on` to start a session capture, `easierparry debug status` to print totals, and `easierparry debug off` to stop. These commands do not save settings. To capture startup and save loading from launch, set `debugLogging = true` in the personal INI and restart.
+
+`PERF` lines report timing-worker average and maximum duration, the phase with the largest sample, checks taking at least 5 ms, maximum queue delay, attachment/repair/wait counts and failures. Queue delay is time waiting for the game thread, not time spent executing this mod. When enabled from launch, the first sample covers bootstrap; automatic summaries follow every 30 seconds, or at most every 5 seconds when checks are slow, stopping after 120 automatic reports. Manual status remains available. No extra timer or object search is created.
+
+Timing uses Windows `os.clock`, with millisecond granularity. A zero measurement means below clock resolution. Measurements include calls made by the timing worker, but exclude its performance-summary logging, separate GuardTrace diagnostics, native guard abilities and whole-game/GPU frame time. Compare equivalent gameplay runs with other diagnostic logging disabled. With debug logging off, no performance clock is sampled and no PERF summary is emitted.

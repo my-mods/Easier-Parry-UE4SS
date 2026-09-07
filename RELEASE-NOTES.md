@@ -15,3 +15,5 @@ After replacement, keep LT held and test single attacks, repeated attacks, attac
 Version stays 1.1.1. No release or tag is created.
 
 The timing script also follows the active viewport's local player and current attribute owner after save loading. Temporary unpossession and partial-write retries retain the captured baseline. At the default one-second interval, simulated idle and recovery tests perform no global player searches; steady state performs no attribute writes or configuration reads. These operation-count tests do not measure in-game frame times. After replacement, verify the configured factor over repeated save loads and death/respawn, and compare frame times with diagnostics disabled.
+
+Optional performance diagnostics are available through `easierparry debug on`, `debug status`, and `debug off`. They measure the timing worker and its queue delay, with millisecond clock granularity and bounded summary output. Debug logging remains disabled by default.

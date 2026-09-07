@@ -2,6 +2,8 @@
 
 ## Pending changes
 
+- Add debug-only timing-worker duration, queue delay, lifecycle and error summaries with bounded output and session controls. Debug logging stays off by default.
+
 - Resolve parry timing through the active viewport's local player and recheck the attribute owner after loading or possession changes, including when old objects remain valid.
 - Preserve the captured baseline across temporary unpossession and partial-write retries. Release only values still matching the mod's override.
 - Keep player resolution and attribute checks bounded at the configured interval, without global searches during save-load recovery. Runtime frame-time validation remains pending.

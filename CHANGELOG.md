@@ -2,18 +2,12 @@
 
 ## Pending changes
 
-- Resolve parry timing through the active viewport's local player and recheck the attribute owner after loading or possession changes, including when old objects remain valid.
-- Preserve the captured baseline across temporary unpossession and partial-write retries. Release only values still matching the mod's override.
-- Keep player resolution and attribute checks bounded at the configured interval, without global searches during save-load recovery. Runtime frame-time validation remains pending.
-
-- Preserve the held block-input ability through attacks instead of losing guard until the next LT press.
-- Lower desired guard before the stock attack handoff. The previous correction left it raised, preventing attacks from blocking state.
-- Restore held guard on attack release only after dodge suppression also ends; use four fixed native listeners without accumulating tasks.
-- Use native dodge-lifetime suppression and automatic cleanup, replacing the Lua dodge workaround.
-- Add guardTraceLogging=true for bounded, read-only transition diagnostics. Use one-shot delayed callbacks so setup and buffered logging stop when idle.
-- Package native abilities and the timing script together as Root (game folder). Updates from the old UE4SS type require reinstalling through Vortex's installer.
-- Retire dodgeInterruptsGuard without rewriting personal INIs. Native guard fixes are always active while installed; enabled/on/off control only timing.
-- The player reports dodge and blocking now working. The latest attack correction passes offline regression and package checks; live combat and frame-time validation remain pending. Version metadata is unchanged.
+- Restore the exact native guard/dodge assets from the earlier build reported working for dodge and blocking. Remove attack-press/release guard handoff changes.
+- Release guard before attacking. Dodge uses the original native attack-interruption path; no attack-recovery timer or forced animation cancellation is added.
+- Preserve three fixed guard listeners and native dodge-lifetime suppression. Actual guard release/cancellation prevents later guard restoration.
+- Retain bounded guardTraceLogging=true diagnostics with the one-shot worker fix, and retain the current player/attribute ownership correction across save loads.
+- Package native abilities and timing together as Root (game folder); preserve personal INI settings. Version metadata is unchanged.
+- Native asset round-trip, repeated dodge lifecycle, logging idle/flood and current player ownership tests pass. Live replacement confirmation and frame-time validation remain pending.
 
 ## 1.1.1 — 2026-09-06
 

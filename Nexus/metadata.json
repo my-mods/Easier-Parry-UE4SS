@@ -25,7 +25,7 @@
   ],
   "fileName": "Easier-Parry-UE4SS.zip",
   "fileDisplayName": "Easier Parry - UE4SS",
-  "fileDescription": "Development build: correct attack handoff while keeping LT held, with read-only guardTraceLogging enabled. Requires UE4SS; replace through Vortex as Root (game folder). Live validation pending. Version unchanged; no new release.",
+  "fileDescription": "Development build restoring the previously working native guard/dodge behavior. Release guard before attacking. Bounded diagnostics remain enabled. Requires UE4SS; replace through Vortex as Root (game folder). Version unchanged; live replacement validation pending.",
   "sourceUrl": "https://github.com/my-mods/Easier-Parry-UE4SS",
   "nexusModId": 161,
   "nexusFileId": null,

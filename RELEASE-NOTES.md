@@ -1,4 +1,4 @@
-# Easier Parry - UE4SS development update
+# Easier Parry - UE4SS 1.2.1
 
-- Restore the base game’s attack/combo guard behavior by removing the custom guard-input override.
-- Keep native held-guard recovery after dodging and the existing parry timing settings.
+- Restore vanilla attack/combo guard handling by removing the custom guard-input override.
+- Keep held-guard recovery after dodging with only the native dodge asset override.

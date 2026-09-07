@@ -3,9 +3,9 @@ More forgiving parries, with native held-guard recovery after dodging. Attack in
 
 [b]Features[/b]
 [list]
-[*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.
-[*]Held guard resumes after native dodge suppression ends, unless an attack or actual guard release has ended guarding.
-[*]Personal settings stay separate from the mod and survive updates.
+[*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.[/*]
+[*]Held guard resumes after native dodge suppression ends, unless an attack or actual guard release has ended guarding.[/*]
+[*]Personal settings stay separate from the mod and survive updates.[/*]
 [/list]
 Normal dodge eligibility, stamina and animation rules remain in effect. Stock attack/combo transitions can still end guard; a later dodge does not reactivate an ended guard ability. Release and press guard again in that case.
 
@@ -34,7 +34,7 @@ Before upgrading from an older version, copy Scripts/EasierParryUE4SS.ini from t
 To uninstall, remove the mod through Vortex and deploy, or, for a manual install, remove its EasierParryUE4SS folder under ue4ss/Mods and its three zzz_EasierParryUE4SS_P containers under Dawnwalker/Content/Paks/~mods. Personal settings remain.
 
 [b]Compatibility and source[/b]
-Native assets target Steam build 25129649 / CL-257186. Replaces GA_Input_CombatBlock and GA_Dodge. Choose one mod for each of these abilities; other parry timing overrides may also conflict. Controller Tweaks and Remap changes different assets and can remain enabled.
+Native assets target Steam build 25129649 / CL-257186. Replaces GA_Dodge only. Other mods replacing that ability or overriding parry timing may conflict. Mods changing guard input may alter dodge recovery. Controller Tweaks and Remap changes different assets and can remain enabled.
 
 [b]Diagnostics[/b]
 Set debugLogging = true under [General], or use easierparry debug on/off for this session, to capture bounded guard and timing diagnostics in ue4ss/UE4SS.log. Both are off by default. The retired guardTraceLogging key is ignored. Keep the log before another launch if testing fails.

@@ -1,13 +1,13 @@
-# Easier Parry - UE4SS — Pending changes
+# Easier Parry - UE4SS — Pending investigation
 
-Fix held guard being lost after attacking as well as dodging. The stock block-input ability ended itself after an attack handoff, or on the next attack after release, while the physical guard input stayed held. That destroyed its guard listeners until guard was pressed again.
+The native held-guard correction from the previous development build did not resolve the reported failure in game. The deployed Lua and all three native container files were verified byte-for-byte against that build. Offline ability-flow tests did not establish runtime correctness.
 
-The native block ability now remains active until actual guard release or cancellation. Dodge uses the existing ability-owned suppression tag to lower guard for its lifetime and resume it afterward, including failed attempts. This replaces the previous Lua dodge-request restoration. Attack-release listeners that would accumulate under a persistent guard ability are bypassed; only three existing tasks remain active per held guard.
+Add a separate `guardTraceLogging` INI option, enabled in this diagnostic build. It observes guard setters, attack/dodge requests, block ability activation/end, input release and suppression callbacks. Snapshots record raw LT, Block/suppression tags, desired guard and blocking state. Hook registration failures and unavailable reads are explicit. No additional gameplay correction is claimed in this build; existing native assets are unchanged.
 
-No added guard timer, input polling, global object search or Lua hook. The timing attribute checker and personal INI handling are preserved. Compiled stock bytecode reproduces both attack failure paths; patched source and container round-trip regressions cover repeated attacks, dodge suppression, release and cancellation. Live gameplay and frame-time checks remain pending.
+Diagnostics use bounded, event-driven work: at most one registration step per 100 ms, finite retries resumed by relevant construction, at most eight full snapshots and 32 captured events per 100 ms, a 64-record queue, at most eight queued lines per 200 ms flush, and a 2,048-record launch limit. Workers stop when idle. No searches run in combat callbacks. Diagnostic logging has not been benchmarked in game.
 
-**Vortex update:** close the game, disable the old Easier Parry entry and deploy. Replace/reinstall that entry from Easier-Parry-UE4SS.zip through the installer, select **Root (game folder)**, then enable and deploy. This replaces the older UE4SS mod type; redeployment alone retains its old layout. Keep one enabled entry. Controller Tweaks can remain enabled. The package replaces GA_Input_CombatBlock and GA_Dodge, so other replacements of those assets require a conflict choice.
+Replace/reinstall the existing Vortex entry as **Root (game folder)** and deploy. Keep one enabled entry and retain Controller Tweaks for this reproduction. Personal INI settings are preserved. `guardTraceLogging = true` enables this trace independently of timing; set false and restart to disable. The old dodgeInterruptsGuard option remains retired.
 
-**Configuration change:** native guard fixes are always active with the mod installed. The old dodgeInterruptsGuard setting and dodge console toggle are retired. Existing personal INI bytes are preserved; enabled and easierparry on/off now control only parry timing. Disable the complete mod in Vortex to restore stock guard behavior.
+Load a save, keep LT held, attack or dodge until the stick moves the player instead of choosing parry direction, then release/repress LT once. Exit the game and retain `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log` before another launch. The trace will distinguish lost input, ability cancellation, missing native-patch behavior and guard state divergence.
 
-Version metadata remains 1.1.1. No new release or tag accompanies this development ZIP.
+Version stays 1.1.1. No release or tag is created. Live investigation remains open.

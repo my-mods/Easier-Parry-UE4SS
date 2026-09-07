@@ -17,6 +17,7 @@ local config = {
     factor = 2.0,
     pollMilliseconds = 1000,
     debugLogging = false,
+    guardTraceLogging = false,
     dodgeInterruptsGuard = false, -- Legacy INI compatibility; native guard assets own this behavior.
 }
 
@@ -111,10 +112,10 @@ local function ApplyIni(contents, path)
             local key, value = string.match(clean, "^([%w_]+)%s*=%s*(.-)%s*$")
             if key ~= nil then
                 key = string.lower(key)
-                if key == "enabled" or key == "debuglogging" or key == "dodgeinterruptsguard" then
+                if key == "enabled" or key == "debuglogging" or key == "guardtracelogging" or key == "dodgeinterruptsguard" then
                     local parsed = ParseBoolean(value)
                     if parsed ~= nil then
-                        local field = ({enabled="enabled", debuglogging="debugLogging", dodgeinterruptsguard="dodgeInterruptsGuard"})[key]
+                        local field = ({enabled="enabled", debuglogging="debugLogging", guardtracelogging="guardTraceLogging", dodgeinterruptsguard="dodgeInterruptsGuard"})[key]
                         config[field] = parsed
                     end
                 elseif key == "factor" or key == "pollmilliseconds" then
@@ -488,6 +489,10 @@ local function Tick()
 end
 
 if not LoadConfig() then return end
+if config.guardTraceLogging then
+    local ok, err = pcall(function() dofile(ScriptIniPath("GuardTrace.lua"))(Log) end)
+    if not ok then Log("GuardTrace failed to initialize: %s", tostring(err)) end
+end
 
 if RegisterConsoleCommandHandler ~= nil then
     RegisterConsoleCommandHandler("easierparry", function(fullCommand, parameters, ar)

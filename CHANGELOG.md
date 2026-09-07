@@ -2,6 +2,9 @@
 
 ## Pending changes
 
+- Investigate the persisting held-guard failure after confirming the previous build is deployed. Native correction remains insufficient in game.
+- Add guardTraceLogging=true for read-only, bounded transition diagnostics; trace raw LT, input tags, ability lifecycle and guard intent/state without changing gameplay.
+
 - Preserve the held block-input ability through attacks instead of ending it and losing guard until the next press.
 - Use native dodge-lifetime suppression and automatic cleanup to resume held guard, replacing the Lua dodge workaround.
 - Keep a fixed set of three guard listeners; bypass the attack-release listener chain that otherwise accumulates during a continuous hold.

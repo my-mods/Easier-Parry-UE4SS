@@ -1,11 +1,11 @@
 [b]Easier Parry - UE4SS[/b]
-More forgiving parries, with held guard preserved through attacks and dodges.
+More forgiving parries. The held-guard correction remains under investigation after an unresolved in-game report.
 
 [b]Features[/b]
 [list]
 [*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.
-[*]Attacks no longer end the held guard-input ability. Dodge temporarily lowers guard and resumes it when combat rules allow, including failed attempts.
-[*]Native guard handling uses gameplay events with no added polling, Lua guard hooks or recovery timers.
+[*]Includes a native correction intended to preserve held guard through attacks and dodges; the reported failure remains unresolved.
+[*]Native guard handling uses gameplay events. Optional read-only Lua diagnostics observe guard/input transitions.
 [*]Personal timing settings stay separate from the mod and survive updates.
 [/list]
 Actual guard release and ability cancellation still end guarding. Normal stamina and dodge animation logic remain unchanged. The fix targets guard held before the action. In-game combat and frame-time validation remain pending.
@@ -14,6 +14,9 @@ Actual guard release and ability cancellation still end guarding. Normal stamina
 Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]Root (game folder)[/b], then enable and deploy. Both the native assets and Lua timing script are required.
 
 For updates from the older UE4SS package, close the game, disable the old entry and deploy. Replace/reinstall that entry through the installer as Root (game folder), then enable and deploy. Redeployment alone keeps the old installer layout. Keep one enabled entry. Personal settings are not replaced.
+
+[b]Diagnostic build[/b]
+guardTraceLogging = true is enabled for this investigation. It records bounded GuardTrace events in ue4ss/UE4SS.log; set false in your personal INI and restart to disable. Reproduce with LT held, release/repress it once after the failure, then retain the log before another launch. No new gameplay correction is claimed.
 
 [b]Settings[/b]
 Your personal INI is created on first launch:

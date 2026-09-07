@@ -1,20 +1,13 @@
 # Changes
 
-## Pending changes
+## 1.2.0 — 2026-09-07 (prerelease)
 
-- A normal attack press now ends guard immediately. Guard stays off after attack release and dodge completion until the player releases and presses guard again.
-- Preserve three fixed guard listeners and native dodge-lifetime suppression. Actual guard release/cancellation prevents later guard restoration.
-- Retain bounded guardTraceLogging=true diagnostics with the one-shot worker fix, and retain the current player/attribute ownership correction across save loads.
-- Package native abilities and timing together as Root (game folder); preserve personal INI settings. Version metadata is unchanged.
-
-- Add debug-only timing-worker duration, queue delay, lifecycle and error summaries with bounded output and session controls. Debug logging stays off by default.
-
-- Resolve parry timing through the active viewport's local player and recheck the attribute owner after loading or possession changes, including when old objects remain valid.
-- Preserve the captured baseline across temporary unpossession and partial-write retries. Release only values still matching the mod's override.
-- Keep player resolution and attribute checks bounded at the configured interval, without global searches during save-load recovery. Runtime frame-time validation remains pending.
-
-
-
+- Replace optional Lua dodge interruption with native held-guard recovery after dodging. Normal attacks cancel guard until guard is released and pressed again.
+- Retire dodgeInterruptsGuard and the dodge console toggle. Native guard changes remain active while installed; enabled and easierparry on/off now control only parry timing.
+- Follow the active local player and attribute owner across save loads and possession changes; preserve the captured timing baseline during temporary unpossession and partial-write retries.
+- Add bounded guard and timing diagnostics under debugLogging, off by default. Diagnostic workers stop when finished.
+- Change installation to Root (game folder), including native guard/dodge assets and the Lua timing script. Disable the old entry and deploy, then reinstall the same entry through Vortex as Root and deploy again. Personal INI settings remain preserved.
+- Native combat behavior and frame times still need in-game validation. Other mods replacing GA_Input_CombatBlock or GA_Dodge conflict; Controller Tweaks and Remap changes different assets.
 
 ## 1.1.1 — 2026-09-06
 
@@ -83,5 +76,3 @@
 
 - Generate Vortex display name, version, and description in the release archive.
 - Preserve the existing ZIP filename and runtime payloads. Reinstall/replace through Vortex to read metadata.
-
-- Use debugLogging for both timing diagnostics and guard tracing; default both off and apply session debug on/off to both. Retire guardTraceLogging.

@@ -1,15 +1,12 @@
-# Easier Parry - UE4SS — Pending attack cancels guard
+# Easier Parry - UE4SS 1.2.0 (prerelease)
 
-A normal attack press now ends guard immediately, even while LT stays held. Guard stays off until LT is released and pressed again. Attack release does not restore guard, so it cannot cut off the attack animation through the previous recovery path.
+- Replace optional Lua dodge interruption with native held-guard recovery after dodging. Normal attacks cancel guard until guard is released and pressed again.
+- Retire dodgeInterruptsGuard and the dodge console toggle. Native guard changes remain active while installed; enabled and easierparry on/off now control only parry timing.
+- Follow the active local player and attribute owner across save loads and possession changes; preserve the captured timing baseline during temporary unpossession and partial-write retries.
+- Add bounded guard and timing diagnostics under debugLogging, off by default. Diagnostic workers stop when finished.
+- Change installation to Root (game folder), including native guard/dodge assets and the Lua timing script. Disable the old entry and deploy, then reinstall the same entry through Vortex as Root and deploy again. Personal INI settings remain preserved.
+- Native combat behavior and frame times still need in-game validation. Other mods replacing GA_Input_CombatBlock or GA_Dodge conflict; Controller Tweaks and Remap changes different assets.
 
-The change redirects the existing light-attack listener to the stock guard teardown callback. It adds no listener, timer, object search, or per-frame work. The separate native attack input ability handles the attack normally; the guard ability no longer queues an additional attack. Three listeners remain per guard hold and all are removed by teardown.
+Close the game, disable the old Vortex entry and deploy. Replace/reinstall that entry as **Root (game folder)**, then enable and deploy. Keep one enabled Easier Parry entry. Redeployment alone does not change the old installer layout. Copy custom legacy INI settings to the personal file before replacement if needed; existing personal settings are preserved.
 
-Dodge behavior is preserved: a dodge while guarding restores held guard after native suppression ends, unless an attack or actual guard release has ended guarding. Dodge executable assets, eligibility, stamina and native attack interruption are unchanged. Current timing ownership fixes and bounded diagnostics are retained; the single debugLogging setting controls guard tracing and timing diagnostics, both off by default.
-
-Replace/reinstall the existing Vortex entry as **Root (game folder)** and deploy. Keep one enabled Easier Parry entry. Controller Tweaks can remain enabled. Personal INI settings are preserved.
-
-Offline checks cover cooked-asset round trips, 1,000 guard/dodge cycles, 1,000 attack cancellations with LT held, attack/dodge overlap, fresh guard presses, fixed task counts, diagnostic idle/flood limits, and the current timing ownership code. These do not establish live animations or frame times.
-
-Test holding LT and dodging, then holding LT and attacking. Guard should drop on attack and stay off after the attack button is released, including after a subsequent dodge. Release and press LT again to guard. Retain ue4ss/UE4SS.log before another launch if anything fails.
-
-Version remains 1.1.1. No release or tag is created.
+Verify held-LT dodges, attack cancellation while LT remains held, attack/dodge overlap, release/repress LT recovery, save loading and respawning. Static checks do not establish live animations or frame times.

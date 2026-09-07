@@ -7,7 +7,6 @@
 local MOD_NAME = "EasierParryUE4SS"
 local INI_NAME = "EasierParryUE4SS.ini"
 local DEFAULTS_NAME = "EasierParryUE4SS.defaults.ini"
-local PLAYER_CLASS = "DawnwalkerPlayerCharacter"
 local ATTRIBUTE_SET_FIELD = "CharDevAttributeSet"
 local ATTRIBUTE_FIELD = "ParryWindowMultiplier"
 local SCRIPT_SOURCE = debug.getinfo(1, "S").source
@@ -22,7 +21,9 @@ local config = {
 }
 
 local active = nil
-local cachedPlayer = nil
+local engine, gameplayStatics = nil, nil
+local bootstrapAttempted = false
+local pendingEngine = nil
 local pending = false
 local lastFailure = nil
 
@@ -348,33 +349,46 @@ local function WriteAttribute(attributeSet, base, current, kind)
 end
 
 local function FindPlayerAttributeSet()
-    local player = cachedPlayer
-    if not IsLive(player) then
-        local ok
-        ok, player = pcall(FindFirstOf, PLAYER_CLASS)
-        if not ok or not IsLive(player) or IsDefaultObject(player) then
-            player = nil
-            local foundAll, players = pcall(FindAllOf, PLAYER_CLASS)
-            if foundAll and players ~= nil then
-                for _, candidate in pairs(players) do
-                    if IsLive(candidate) and not IsDefaultObject(candidate) then
-                        player = candidate
-                        break
-                    end
-                end
-            end
+    -- Engine/CDO discovery happens once per startup (or explicit 'on'), never
+    -- once per missing player. Construction callbacks only hand off a reference.
+    if pendingEngine ~= nil then
+        if IsLive(pendingEngine) and not IsDefaultObject(pendingEngine) then
+            engine = pendingEngine
         end
-        cachedPlayer = player
+        pendingEngine = nil
     end
-    if not IsLive(player) then
-        return nil, nil, "waiting for a live player"
+    if not bootstrapAttempted then
+        bootstrapAttempted = true
+        local ok = pcall(function()
+            if not IsLive(engine) then engine = FindFirstOf("Engine") end
+            gameplayStatics = StaticFindObject("/Script/Engine.Default__GameplayStatics")
+        end)
+        if not ok or not IsLive(engine) or not IsLive(gameplayStatics) then
+            Log("WARNING: player resolver unavailable; use easierparry on to retry after loading")
+        end
     end
-
-    local gotSet, attributeSet = pcall(function() return player[ATTRIBUTE_SET_FIELD] end)
-    if not gotSet or not IsLive(attributeSet) then
+    if not IsLive(engine) or not IsLive(gameplayStatics) then
+        return nil, nil, "waiting for the game engine"
+    end
+    -- The viewport follows the current world. A cached pawn/controller can
+    -- remain valid AND locally controlled in the world left by a save load.
+    -- Index zero resolves one local player, without a global UObject scan.
+    local viewport = engine.GameViewport
+    if not IsLive(viewport) then return nil, nil, "waiting for the game viewport" end
+    local player = gameplayStatics:GetPlayerPawn(viewport, 0)
+    if not IsLive(player) or not player:IsPlayerControlled() or not player:IsLocallyControlled() then
+        return nil, nil, "waiting for the local player's possessed pawn"
+    end
+    local attributeSet = player[ATTRIBUTE_SET_FIELD]
+    if not IsLive(attributeSet) then
         return player, nil, "waiting for the player's CharDevAttributeSet"
     end
     return player, attributeSet, nil
+end
+
+local function SameObject(left, right)
+    -- UE4SS may return a new Lua wrapper for the same native object.
+    return IsLive(left) and IsLive(right) and left:GetAddress() == right:GetAddress()
 end
 
 local function RestoreBaseline()
@@ -383,14 +397,23 @@ local function RestoreBaseline()
         return
     end
 
+    -- Do not overwrite a value recalculated by the game while we were detached.
+    local base, current = ReadAttribute(active.attributeSet)
+    if base == nil then active = nil; return end
+    local restoredBase = NearlyEqual(base, active.targetBase) and active.baselineBase or base
+    local restoredCurrent = NearlyEqual(current, active.targetCurrent) and active.baselineCurrent or current
+    if NearlyEqual(base, restoredBase) and NearlyEqual(current, restoredCurrent) then
+        active = nil
+        return
+    end
     local ok, reason = WriteAttribute(
         active.attributeSet,
-        active.baselineBase,
-        active.baselineCurrent,
+        restoredBase,
+        restoredCurrent,
         active.kind
     )
     if ok then
-        Log("Restored baseline %.4f / %.4f", active.baselineBase, active.baselineCurrent)
+        Log("Released timing override %.4f / %.4f", restoredBase, restoredCurrent)
     else
         Log("WARNING: could not restore the baseline: %s", tostring(reason))
     end
@@ -418,7 +441,8 @@ local function Attach(player, attributeSet)
         kind
     )
     if not ok then
-        active = nil
+        -- A write can fail after changing only one field. Retain its baseline
+        -- and target so the next tick repairs it instead of multiplying again.
         return false, writeReason
     end
 
@@ -443,22 +467,23 @@ end
 local function Poll()
     if not config.enabled then return end
 
-    -- Global object discovery is only needed when the cache is absent or stale.
-    -- Healthy ticks validate the cached objects and read the value; no name lookups,
-    -- player resolution, reflection writes, or object-array scans are performed.
-    if active == nil or not IsLive(active.attributeSet) or not IsLive(active.player) then
-        -- A player can disappear while its attribute set is still live. Restore it
-        -- before forgetting the baseline, in case the next player shares that set.
+    local player, attributeSet, reason = FindPlayerAttributeSet()
+    if attributeSet == nil then
+        -- Keep the numeric baseline during temporary unpossession, but never
+        -- repair a detached set. Repossession of that same set must not compound.
+        RecordFailure(reason)
+        return
+    end
+    if active == nil or not SameObject(active.attributeSet, attributeSet) then
+        -- Release only our unchanged value before handing over. This also avoids
+        -- compounding if a later possession returns to the previous live set.
         RestoreBaseline()
-        local player, attributeSet, reason = FindPlayerAttributeSet()
-        if attributeSet == nil then
-            RecordFailure(reason)
-            return
-        end
         local attached, attachReason = Attach(player, attributeSet)
         if not attached then RecordFailure(attachReason) else lastFailure = nil end
         return
     end
+
+    active.player = player
 
     local attributeSet = active.attributeSet
     local base, current, _, reason = ReadAttribute(attributeSet)
@@ -489,75 +514,91 @@ local function Tick()
 end
 
 if not LoadConfig() then return end
+-- No reflected reads in the construction callback; the next maintenance tick
+-- observes readiness on the game thread. Missing notifications never cause scans.
+local notified, notifyError = pcall(function()
+    NotifyOnNewObject("/Script/Engine.Engine", function(object)
+        pendingEngine = object
+    end)
+end)
+if not notified then
+    Log("WARNING: engine replacement notification unavailable: %s", tostring(notifyError))
+end
 if config.guardTraceLogging then
     local ok, err = pcall(function() dofile(ScriptIniPath("GuardTrace.lua"))(Log) end)
     if not ok then Log("GuardTrace failed to initialize: %s", tostring(err)) end
 end
 
+local function HandleCommand(command)
+    if command == "dodge" then
+        Log("Guard recovery now uses native game abilities and is always active while this mod is installed. The old dodge toggle is retired; your personal INI is preserved.")
+        return true
+    end
+
+    if command == "status" then
+        Log("Native held-guard fixes are supplied by the installed game assets; enabled controls the timing multiplier only.")
+        if active ~= nil then
+            Log(
+                "enabled=%s factor=%.3f baseline=%.4f/%.4f target=%.4f/%.4f",
+                tostring(config.enabled),
+                config.factor,
+                active.baselineBase,
+                active.baselineCurrent,
+                active.targetBase,
+                active.targetCurrent
+            )
+        else
+            Log("enabled=%s factor=%.3f; waiting for a player", tostring(config.enabled), config.factor)
+        end
+        return true
+    end
+
+    if command == "off" then
+        config.enabled = false
+        RestoreBaseline()
+        Log("Parry timing disabled; native guard fixes remain active.")
+        SaveConfig({"enabled"})
+        return true
+    end
+
+    if command == "on" then
+        bootstrapAttempted = false
+        config.enabled = true
+        Log("Parry timing enabled; native guard fixes remain active.")
+        SaveConfig({"enabled"})
+        return true
+    end
+
+    if command == "reload" then
+        Log("Settings are loaded once at startup. Use easierparry <factor>, on or off to change and save them.")
+        return true
+    end
+
+    local runtimeFactor = tonumber(command)
+    if runtimeFactor ~= nil and runtimeFactor == runtimeFactor and math.abs(runtimeFactor) ~= math.huge then
+        RestoreBaseline()
+        config.factor = math.max(0.1, math.min(50.0, runtimeFactor))
+        config.enabled = true
+        Log("Using factor %.3f", config.factor)
+        SaveConfig({"factor", "enabled"})
+        return true
+    end
+
+    Log("Commands: easierparry status | on | off | <factor>")
+    return true
+end
+
 if RegisterConsoleCommandHandler ~= nil then
     RegisterConsoleCommandHandler("easierparry", function(fullCommand, parameters, ar)
+        -- Copy only owned text into the deferred callback, never callback parameters.
         local command = string.lower(tostring(parameters[1] or "status"))
-
-        if command == "dodge" then
-            Log("Guard recovery now uses native game abilities and is always active while this mod is installed. The old dodge toggle is retired; your personal INI is preserved.")
-            return true
-        end
-
-        if command == "status" then
-            Log("Native held-guard fixes are supplied by the installed game assets; enabled controls the timing multiplier only.")
-            if active ~= nil then
-                Log(
-                    "enabled=%s factor=%.3f baseline=%.4f/%.4f target=%.4f/%.4f",
-                    tostring(config.enabled),
-                    config.factor,
-                    active.baselineBase,
-                    active.baselineCurrent,
-                    active.targetBase,
-                    active.targetCurrent
-                )
-            else
-                Log("enabled=%s factor=%.3f; waiting for a player", tostring(config.enabled), config.factor)
-            end
-            return true
-        end
-
-        if command == "off" then
-            RestoreBaseline()
-            config.enabled = false
-            Log("Parry timing disabled; native guard fixes remain active.")
-            SaveConfig({"enabled"})
-            return true
-        end
-
-        if command == "on" then
-            config.enabled = true
-            Log("Parry timing enabled; native guard fixes remain active.")
-            SaveConfig({"enabled"})
-            return true
-        end
-
-        if command == "reload" then
-            Log("Settings are loaded once at startup. Use easierparry <factor>, on or off to change and save them.")
-            return true
-        end
-
-        local runtimeFactor = tonumber(command)
-        if runtimeFactor ~= nil and runtimeFactor == runtimeFactor and math.abs(runtimeFactor) ~= math.huge then
-            RestoreBaseline()
-            config.factor = math.max(0.1, math.min(50.0, runtimeFactor))
-            config.enabled = true
-            Log("Using factor %.3f", config.factor)
-            SaveConfig({"factor", "enabled"})
-            return true
-        end
-
-        Log("Commands: easierparry status | on | off | <factor>")
+        ExecuteInGameThread(function() HandleCommand(command) end)
         return true
     end)
 end
 
 LoopAsync(config.pollMilliseconds, function()
-    if not pending then
+    if config.enabled and not pending then
         pending = true
         ExecuteInGameThread(Tick)
     end

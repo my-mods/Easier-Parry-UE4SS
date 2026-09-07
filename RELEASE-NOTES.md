@@ -13,3 +13,5 @@ Offline tests cover 1,000 attack press/release handoffs, guard lowered before qu
 After replacement, keep LT held and test single attacks, repeated attacks, attack/dodge overlaps and directional parrying after each action, including after loading a save. Retain `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log` before another launch if anything fails. In-game validation remains pending.
 
 Version stays 1.1.1. No release or tag is created.
+
+The timing script also follows the active viewport's local player and current attribute owner after save loading. Temporary unpossession and partial-write retries retain the captured baseline. At the default one-second interval, simulated idle and recovery tests perform no global player searches; steady state performs no attribute writes or configuration reads. These operation-count tests do not measure in-game frame times. After replacement, verify the configured factor over repeated save loads and death/respawn, and compare frame times with diagnostics disabled.

@@ -2,6 +2,10 @@
 
 ## Pending changes
 
+- Resolve parry timing through the active viewport's local player and recheck the attribute owner after loading or possession changes, including when old objects remain valid.
+- Preserve the captured baseline across temporary unpossession and partial-write retries. Release only values still matching the mod's override.
+- Keep player resolution and attribute checks bounded at the configured interval, without global searches during save-load recovery. Runtime frame-time validation remains pending.
+
 - Preserve the held block-input ability through attacks instead of losing guard until the next LT press.
 - Lower desired guard before the stock attack handoff. The previous correction left it raised, preventing attacks from blocking state.
 - Restore held guard on attack release only after dodge suppression also ends; use four fixed native listeners without accumulating tasks.

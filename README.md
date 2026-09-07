@@ -8,7 +8,7 @@ Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native held
 - Keeps the guard input ability alive while temporarily lowering guard for attack input. Releasing attack restores held guard when dodge suppression has ended.
 - Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
 - Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
-- The timing checker caches the player and attribute, checks once per second by default and writes only when needed.
+- The timing checker follows the current local player and attribute owner, checks once per second by default and writes only when needed. Save loading uses no global player-object searches.
 
 ## Installation
 

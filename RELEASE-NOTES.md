@@ -13,3 +13,7 @@ Checks cover exact native rollback bytes, cooked-asset round trips, 1,000 guard/
 In game, hold LT and dodge repeatedly, checking directional parrying afterward. Then release LT, attack, and dodge during the attack. Also test releasing LT during a dodge. Retain ue4ss/UE4SS.log before the next launch if anything fails.
 
 Version stays 1.1.1. No release or tag is created.
+
+The timing script also follows the active viewport's local player and current attribute owner after save loading. Temporary unpossession and partial-write retries retain the captured baseline. At the default one-second interval, simulated idle and recovery tests perform no global player searches; steady state performs no attribute writes or configuration reads. These operation-count tests do not measure in-game frame times. After replacement, verify the configured factor over repeated save loads and death/respawn, and compare frame times with diagnostics disabled.
+
+Optional performance diagnostics are available through `easierparry debug on`, `debug status`, and `debug off`. They measure the timing worker and its queue delay, with millisecond clock granularity and bounded summary output. Debug logging remains disabled by default.

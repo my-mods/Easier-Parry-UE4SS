@@ -465,22 +465,23 @@ local function RecordFailure(reason)
 end
 
 local function Poll()
-    if not config.enabled then return end
+    if not config.enabled then return "disabled" end
 
     local player, attributeSet, reason = FindPlayerAttributeSet()
     if attributeSet == nil then
         -- Keep the numeric baseline during temporary unpossession, but never
         -- repair a detached set. Repossession of that same set must not compound.
         RecordFailure(reason)
-        return
+        return "waiting"
     end
     if active == nil or not SameObject(active.attributeSet, attributeSet) then
         -- Release only our unchanged value before handing over. This also avoids
         -- compounding if a later possession returns to the previous live set.
         RestoreBaseline()
         local attached, attachReason = Attach(player, attributeSet)
-        if not attached then RecordFailure(attachReason) else lastFailure = nil end
-        return
+        if not attached then RecordFailure(attachReason); return "error" end
+        lastFailure = nil
+        return "attach"
     end
 
     active.player = player
@@ -489,7 +490,7 @@ local function Poll()
     local base, current, _, reason = ReadAttribute(attributeSet)
     if base == nil then
         RecordFailure(reason)
-        return
+        return "error"
     end
     if not NearlyEqual(base, active.targetBase) or not NearlyEqual(current, active.targetCurrent) then
         local repaired, repairReason = WriteAttribute(
@@ -501,16 +502,83 @@ local function Poll()
         if repaired then
             Debug("Reapplied the runtime value after the game recalculated it")
             lastFailure = nil
+            return "repair"
         else
             RecordFailure(repairReason)
+            return "error"
         end
+    end
+end
+
+-- Debug-only wall-time sampling around the timing worker, including native calls.
+-- Windows CRT os.clock has millisecond granularity: zero is not proof of zero cost.
+-- No profiler timers, object lookups, or retained samples; only fixed-size counters.
+local perf, queuedAt = nil, nil
+local PERF_REPORT_LIMIT = 120
+local function PerfClock()
+    local ok, value = pcall(os.clock)
+    if ok and type(value) == "number" and value >= 0 and value < math.huge then return value end
+    return nil
+end
+local function NewPerf(now)
+    return {count=0, total=0, max=0, queueMax=0, slow=0, errors=0,
+        attach=0, repair=0, waiting=0, reports=0, lastReport=now,
+        worstPhase="none", lastError="none"}
+end
+local function PerfReport(label, now, automatic)
+    if not perf then Log("PERF %s: no timing samples collected", label); return end
+    if automatic and perf.reports >= PERF_REPORT_LIMIT then return end
+    if automatic then perf.reports = perf.reports + 1 end
+    perf.lastReport = now
+    Log("PERF %s: samples=%d avg=%.3fms max=%.3fms worst=%s slow(>=5ms)=%d queueMax=%.3fms attach=%d repair=%d wait=%d errors=%d lastError=%s; worker only, excludes summary logging; os.clock ms granularity",
+        label, perf.count, perf.total / math.max(1, perf.count), perf.max,
+        perf.worstPhase, perf.slow, perf.queueMax, perf.attach, perf.repair,
+        perf.waiting, perf.errors, perf.lastError)
+    if automatic and perf.reports == PERF_REPORT_LIMIT then
+        Log("PERF automatic output limit reached; use easierparry debug status for totals or debug on to start a new capture")
     end
 end
 
 local function Tick()
     pending = false
-    local ok, reason = pcall(Poll)
-    if not ok then RecordFailure("runtime error: " .. tostring(reason)) end
+    local start = config.debugLogging and PerfClock() or nil
+    local queued = queuedAt
+    queuedAt = nil
+    local bootstrapping = not bootstrapAttempted
+    local ok, outcome = pcall(Poll)
+    if not ok then RecordFailure("runtime error: " .. tostring(outcome)) end
+    if not config.debugLogging then return end
+    local finish = PerfClock()
+    if not start or not finish or finish < start then
+        if not perf or not perf.clockFailed then
+            Log("PERF clock unavailable or moved backwards; sample discarded")
+        end
+        perf = perf or NewPerf(0)
+        perf.clockFailed = true
+        return
+    end
+    perf = perf or NewPerf(start)
+    perf.clockFailed = false
+    local elapsed = math.floor((finish - start) * 1000 + 0.5)
+    local phase = bootstrapping and "bootstrap" or (ok and (outcome or "steady") or "error")
+    perf.count = perf.count + 1
+    perf.total = perf.total + elapsed
+    if elapsed >= perf.max then perf.max = elapsed; perf.worstPhase = phase end
+    if queued and queued <= start then perf.queueMax = math.max(perf.queueMax, math.floor((start-queued)*1000 + 0.5)) end
+    if elapsed >= 5 then perf.slow = perf.slow + 1 end
+    if outcome == "attach" then perf.attach = perf.attach + 1 end
+    if outcome == "repair" then perf.repair = perf.repair + 1 end
+    if outcome == "waiting" then perf.waiting = perf.waiting + 1 end
+    if not ok or outcome == "error" then
+        perf.errors = perf.errors + 1
+        perf.lastError = tostring(lastFailure or outcome):sub(1,240):gsub("[\r\n]", " ")
+    end
+    -- First sample includes bootstrap. Afterwards at most one line per five
+    -- seconds during slow work, otherwise one per thirty seconds. Totals persist.
+    if perf.count == 1 or finish-perf.lastReport >= 30
+        or (elapsed >= 5 and finish-perf.lastReport >= 5) then
+        PerfReport("summary", finish, true)
+    end
 end
 
 if not LoadConfig() then return end
@@ -529,7 +597,24 @@ if config.guardTraceLogging then
     if not ok then Log("GuardTrace failed to initialize: %s", tostring(err)) end
 end
 
-local function HandleCommand(command)
+local function HandleCommand(command, argument)
+    if command == "debug" then
+        if argument == "on" then
+            config.debugLogging = true
+            perf, queuedAt = nil, nil
+            Log("Debug logging enabled for this session; PERF captures worker time and queue delay, not whole-game frame time")
+        elseif argument == "off" then
+            if config.debugLogging then PerfReport("final", PerfClock() or 0, false) end
+            config.debugLogging = false
+            perf, queuedAt = nil, nil
+            Log("Debug logging disabled for this session")
+        else
+            Log("Debug logging enabled=%s; commands: easierparry debug on | off | status", tostring(config.debugLogging))
+            if config.debugLogging then PerfReport("status", PerfClock() or 0, false) end
+        end
+        return true
+    end
+
     if command == "dodge" then
         Log("Guard recovery now uses native game abilities and is always active while this mod is installed. The old dodge toggle is retired; your personal INI is preserved.")
         return true
@@ -584,7 +669,7 @@ local function HandleCommand(command)
         return true
     end
 
-    Log("Commands: easierparry status | on | off | <factor>")
+    Log("Commands: easierparry status | on | off | <factor> | debug on/off/status")
     return true
 end
 
@@ -592,7 +677,8 @@ if RegisterConsoleCommandHandler ~= nil then
     RegisterConsoleCommandHandler("easierparry", function(fullCommand, parameters, ar)
         -- Copy only owned text into the deferred callback, never callback parameters.
         local command = string.lower(tostring(parameters[1] or "status"))
-        ExecuteInGameThread(function() HandleCommand(command) end)
+        local argument = string.lower(tostring(parameters[2] or "status"))
+        ExecuteInGameThread(function() HandleCommand(command, argument) end)
         return true
     end)
 end
@@ -600,14 +686,16 @@ end
 LoopAsync(config.pollMilliseconds, function()
     if config.enabled and not pending then
         pending = true
+        queuedAt = config.debugLogging and PerfClock() or nil
         ExecuteInGameThread(Tick)
     end
     return false
 end)
 
 Log(
-    "Loaded (enabled=%s, factor=%.3f, poll=%d ms). Load a save, then check UE4SS.log for 'Applied'.",
+    "Loaded (enabled=%s, factor=%.3f, poll=%d ms, debug=%s). Load a save, then check UE4SS.log for 'Applied'.",
     tostring(config.enabled),
     config.factor,
-    config.pollMilliseconds
+    config.pollMilliseconds,
+    tostring(config.debugLogging)
 )

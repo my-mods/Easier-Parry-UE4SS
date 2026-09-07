@@ -9,6 +9,14 @@
 - Package native abilities and timing together as Root (game folder); preserve personal INI settings. Version metadata is unchanged.
 - Native asset round-trip, repeated dodge lifecycle, logging idle/flood and current player ownership tests pass. Live replacement confirmation and frame-time validation remain pending.
 
+- Add debug-only timing-worker duration, queue delay, lifecycle and error summaries with bounded output and session controls. Debug logging stays off by default.
+
+- Resolve parry timing through the active viewport's local player and recheck the attribute owner after loading or possession changes, including when old objects remain valid.
+- Preserve the captured baseline across temporary unpossession and partial-write retries. Release only values still matching the mod's override.
+- Keep player resolution and attribute checks bounded at the configured interval, without global searches during save-load recovery. Runtime frame-time validation remains pending.
+
+
+
 ## 1.1.1 — 2026-09-06
 
 - Fix a potential crash when loading a save or respawning.

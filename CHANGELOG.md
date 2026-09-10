@@ -1,8 +1,10 @@
 # Changes
 
-## Pending changes
+## 1.2.2 — 2026-09-10
 
-- Restore held guard through native dodge completion. Add native timed cleanup for forward dodges so a missing state-change event cannot leave combat inputs suppressed. Release suppression on failed or cancelled dodges.
+- Restore held guard through native forward-dodge completion.
+- Add native timed cleanup so a missed state-change event does not leave combat inputs suppressed.
+- Clean up failed and cancelled dodges while preserving invincibility effects owned by other abilities.
 
 ## 1.2.1 — 2026-09-07
 

@@ -1,5 +1,9 @@
 # Changes
 
+## Pending changes
+
+- Fix forward dodges leaving combat inputs suppressed by ending the dodge ability after its forward-dodge effect is applied.
+
 ## 1.2.1 — 2026-09-07
 
 - Restore vanilla attack/combo guard handling by removing the custom guard-input override.

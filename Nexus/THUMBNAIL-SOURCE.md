@@ -9,3 +9,5 @@ The Blood of Dawnwalker imagery is copyright Rebel Wolves and Bandai Namco Enter
 The thumbnail adds the mod title and a bottom fade for readability. It is illustrative promotional imagery, not a capture demonstrating this mod installed.
 
 The title was updated using AI image editing on 2026-09-10 to match Easier Parry and Dodge While Blocking.
+
+The accompanying banner.jpg is an AI-generated adaptation of the thumbnail composition, exported at 1300 × 372 pixels in JPEG format.

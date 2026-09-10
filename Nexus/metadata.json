@@ -1,13 +1,13 @@
 {
-  "name": "Easier Parry - UE4SS",
+  "name": "Easier Parry and Dodge While Blocking",
   "version": "1.2.2",
   "game": "The Blood of Dawnwalker",
   "nexusDomain": "thebloodofdawnwalker",
   "summary": "Configurable parry timing with guard recovery after dodging and base-game attack behavior.",
   "descriptionFile": "description.bbcode.txt",
   "thumbnailFile": "thumbnail.png",
-  "thumbnailAltText": "Easier Parry - UE4SS title over an official in-game sword-clash screenshot.",
-  "thumbnailIsAIGenerated": false,
+  "thumbnailAltText": "Easier Parry and Dodge While Blocking title over an official in-game sword-clash screenshot.",
+  "thumbnailIsAIGenerated": true,
   "suggestedCategory": "Gameplay",
   "keywords": [
     "Gameplay",
@@ -23,10 +23,10 @@
   "requiredMods": [
     "UE4SS"
   ],
-  "fileName": "Easier-Parry-UE4SS.zip",
-  "fileDisplayName": "Easier Parry - UE4SS",
+  "fileName": "Easier-Parry-and-Dodge-While-Blocking.zip",
+  "fileDisplayName": "Easier Parry and Dodge While Blocking",
   "fileDescription": "Native forward-dodge guard recovery with timed cleanup for stuck combat inputs.",
-  "sourceUrl": "https://github.com/my-mods/Easier-Parry-UE4SS",
+  "sourceUrl": "https://github.com/my-mods/Easier-Parry-and-Dodge-While-Blocking",
   "nexusModId": 161,
   "nexusFileId": null,
   "license": "MIT"

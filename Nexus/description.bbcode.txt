@@ -1,4 +1,4 @@
-[b]Easier Parry - UE4SS[/b]
+[b]Easier Parry and Dodge While Blocking[/b]
 More forgiving parries, with native held-guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 
 [b]Features[/b]
@@ -39,5 +39,5 @@ Native assets target Steam build 25129649 / CL-257186. Replaces GA_Dodge only. O
 [b]Diagnostics[/b]
 Set debugLogging = true under [General], or use easierparry debug on/off for this session, to capture bounded guard and timing diagnostics in ue4ss/UE4SS.log. Both are off by default. The retired guardTraceLogging key is ignored. Keep the log before another launch if testing fails.
 
-[url=https://github.com/my-mods/Easier-Parry-UE4SS]Source code on GitHub[/url]
+[url=https://github.com/my-mods/Easier-Parry-and-Dodge-While-Blocking]Source code on GitHub[/url]
 Created by [b]oOCamilleOo[/b]. Original mod code is licensed under [b]MIT[/b]; modification and redistribution are allowed with attribution and the included license. Underlying game assets remain the property of their respective rights holders.

@@ -1,6 +1,6 @@
-# Easier Parry - UE4SS
+# Easier Parry and Dodge While Blocking
 
-![Easier Parry - UE4SS](Nexus/thumbnail.png)
+![Easier Parry and Dodge While Blocking](Nexus/thumbnail.png)
 
 Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 
@@ -13,7 +13,7 @@ Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guar
 
 ## Installation
 
-Requires a Dawnwalker-compatible **UE4SS 3.x** installation. Import `Easier-Parry-UE4SS.zip` into Vortex, select **Root (game folder)**, then enable and deploy. Keep one enabled Easier Parry entry.
+Requires a Dawnwalker-compatible **UE4SS 3.x** installation. Import `Easier-Parry-and-Dodge-While-Blocking.zip` into Vortex, select **Root (game folder)**, then enable and deploy. Keep one enabled Easier Parry entry.
 
 The package contains the native dodge asset and the UE4SS timing script. Both are required. `Data` contains only an installer layout note; the payload uses explicit paths under `Dawnwalker`.
 

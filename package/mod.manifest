@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mod>
   <info>
-    <name>Easier Parry - UE4SS</name>
+    <name>Easier Parry and Dodge While Blocking</name>
     <modid>EasierParryUE4SS</modid>
     <description>Configurable parry timing with guard recovery after dodging and base-game attack behavior.</description>
     <author>oOCamilleOo</author>

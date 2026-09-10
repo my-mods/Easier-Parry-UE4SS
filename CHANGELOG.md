@@ -1,8 +1,10 @@
-# Unreleased
-
-- Remove recurring parry checks; read INI/apply timing on startup or save load, and update settings immediately by console command.
-
 # Changes
+
+## 1.2.3 — 2026-09-10
+
+- Remove recurring parry multiplier checks.
+- Read and apply INI settings at startup and when loading a save.
+- Apply console changes immediately and save them to the personal INI.
 
 ## 1.2.2 — 2026-09-10
 

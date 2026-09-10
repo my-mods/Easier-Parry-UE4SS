@@ -1,5 +1,5 @@
-# Easier Parry - UE4SS 1.2.2
+# Easier Parry and Dodge While Blocking 1.2.3
 
-- Fix combat controls getting stuck after a forward dodge.
-- Restore held guard after dodging.
-- Fix cleanup after failed or cancelled dodges.
+- Remove recurring parry multiplier checks.
+- Read and apply INI settings at startup and when loading a save.
+- Apply console changes immediately and save them to the personal INI.

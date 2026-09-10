@@ -2,7 +2,7 @@ Nexus listing materials
 
 Use metadata.json for the mod name, summary, version and download description.
 Paste description.bbcode.txt into the Nexus description editor's BBCode mode.
-Upload thumbnail.png separately as the mod's thumbnail/cover image.
+Upload thumbnail.webp separately as the mod's thumbnail/cover image.
 The thumbnail uses an official in-game screenshot; see THUMBNAIL-SOURCE.md
 for attribution and image rights.
 

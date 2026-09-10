@@ -1,6 +1,6 @@
 # Easier Parry and Dodge While Blocking
 
-![Easier Parry and Dodge While Blocking](Nexus/thumbnail.png)
+![Easier Parry and Dodge While Blocking](Nexus/thumbnail.webp)
 
 Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 

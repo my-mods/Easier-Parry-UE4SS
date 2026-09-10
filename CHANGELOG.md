@@ -2,7 +2,7 @@
 
 ## Pending changes
 
-- Fix forward dodges leaving combat inputs suppressed by ending the dodge ability after its forward-dodge effect is applied.
+- Keep guard lowered until a forward dodge finishes, then restore held guard. Release input suppression on failed or cancelled dodges.
 
 ## 1.2.1 — 2026-09-07
 

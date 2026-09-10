@@ -2,7 +2,7 @@
 -- The Blood of Dawnwalker, PC build 25129649 / executable CL-257186.
 --
 -- Updates the live FGameplayAttributeData on Coen's CharDevAttributeSet. The value is captured
--- from the running game, multiplied from that baseline, and kept applied when the player changes.
+-- from the running game, multiplied from that baseline, and applied on startup/save load or explicit commands.
 
 local MOD_NAME = "EasierParryUE4SS"
 local INI_NAME = "EasierParryUE4SS.ini"
@@ -14,7 +14,7 @@ local SCRIPT_SOURCE = debug.getinfo(1, "S").source
 local config = {
     enabled = true,
     factor = 2.0,
-    pollMilliseconds = 1000,
+    pollMilliseconds = 1000, -- Accepted for old INIs; unused (no periodic checks).
     debugLogging = false,
     dodgeInterruptsGuard = false, -- Legacy INI compatibility; native guard assets own this behavior.
 }
@@ -22,8 +22,10 @@ local config = {
 local active = nil
 local engine, gameplayStatics = nil, nil
 local bootstrapAttempted = false
-local pendingEngine = nil
 local pending = false
+local startupFinished, startupAttempts = false, 0
+local reloadRequested = false
+local SetGuardTracing
 local lastFailure = nil
 
 local function Log(message, ...)
@@ -161,7 +163,7 @@ local function LoadConfig()
             "; Omitted settings inherit EasierParryUE4SS.defaults.ini from the mod.",
             "; Console commands update only the settings they change in this file.",
             "", "[General]", "; enabled = true", "; factor = 2.0",
-            "; pollMilliseconds = 1000", "; debugLogging = false",
+            "; debugLogging = false",
             "; Guard recovery is native and always active; the old dodge option is ignored.", "",
         }, "\n")
         personal, err = CreateUserIni(path, initial)
@@ -350,12 +352,6 @@ end
 local function FindPlayerAttributeSet()
     -- Engine/CDO discovery happens once per startup (or explicit 'on'), never
     -- once per missing player. Construction callbacks only hand off a reference.
-    if pendingEngine ~= nil then
-        if IsLive(pendingEngine) and not IsDefaultObject(pendingEngine) then
-            engine = pendingEngine
-        end
-        pendingEngine = nil
-    end
     if not bootstrapAttempted then
         bootstrapAttempted = true
         local ok = pcall(function()
@@ -546,6 +542,7 @@ local function Tick()
     local bootstrapping = not bootstrapAttempted
     local ok, outcome = pcall(Poll)
     if not ok then RecordFailure("runtime error: " .. tostring(outcome)) end
+    if ok and (outcome == "attach" or outcome == "repair" or outcome == nil) then startupFinished = true end
     if not config.debugLogging then return end
     local finish = PerfClock()
     if not start or not finish or finish < start then
@@ -581,19 +578,36 @@ local function Tick()
 end
 
 if not LoadConfig() then return end
--- No reflected reads in the construction callback; the next maintenance tick
--- observes readiness on the game thread. Missing notifications never cause scans.
-local notified, notifyError = pcall(function()
-    NotifyOnNewObject("/Script/Engine.Engine", function(object)
-        pendingEngine = object
+-- Only startup/load events may start a bounded readiness attempt.
+-- Once applied (or timed out), no maintenance worker remains.
+local function StartupAttempt()
+    if startupFinished or (not config.enabled and not reloadRequested) or pending or startupAttempts >= 20 then return end
+    pending = true
+    ExecuteInGameThreadWithDelay(250, function()
+        pending = false
+        if reloadRequested then
+            reloadRequested = false
+            RestoreBaseline()
+            bootstrapAttempted = false
+            if not LoadConfig() then config.enabled = false; startupFinished = true; return end
+            SetGuardTracing(config.debugLogging)
+        end
+        if startupFinished or not config.enabled then return end
+        startupAttempts = startupAttempts + 1
+        Tick()
+        if not startupFinished then
+            if startupAttempts < 20 then StartupAttempt()
+            else Log("Player not ready; stopped startup/load attempts. Run easierparry on after loading to apply timing.") end
+        end
     end)
-end)
-if not notified then
-    Log("WARNING: engine replacement notification unavailable: %s", tostring(notifyError))
 end
+RegisterLoadMapPostHook(function()
+    startupFinished, startupAttempts, reloadRequested = false, 0, true
+    StartupAttempt()
+end)
 -- One diagnostics switch controls both timing summaries and guard tracing.
 local guardTraceControl
-local function SetGuardTracing(enabled)
+SetGuardTracing = function(enabled)
     if not enabled and not guardTraceControl then return end
     local ok, err = pcall(function()
         if guardTraceControl then
@@ -651,6 +665,7 @@ local function HandleCommand(command, argument)
 
     if command == "off" then
         config.enabled = false
+        startupFinished = true
         RestoreBaseline()
         Log("Parry timing disabled; native guard fixes remain active.")
         SaveConfig({"enabled"})
@@ -662,11 +677,14 @@ local function HandleCommand(command, argument)
         config.enabled = true
         Log("Parry timing enabled; native guard fixes remain active.")
         SaveConfig({"enabled"})
+        Tick()
         return true
     end
 
     if command == "reload" then
-        Log("Settings are loaded once at startup. Use easierparry <factor>, on or off to change and save them.")
+        Log("Reloading INI settings and applying timing.")
+        RestoreBaseline()
+        if LoadConfig() then bootstrapAttempted = false; SetGuardTracing(config.debugLogging); Tick() end
         return true
     end
 
@@ -677,6 +695,8 @@ local function HandleCommand(command, argument)
         config.enabled = true
         Log("Using factor %.3f", config.factor)
         SaveConfig({"factor", "enabled"})
+        bootstrapAttempted = false
+        Tick()
         return true
     end
 
@@ -694,19 +714,5 @@ if RegisterConsoleCommandHandler ~= nil then
     end)
 end
 
-LoopAsync(config.pollMilliseconds, function()
-    if config.enabled and not pending then
-        pending = true
-        queuedAt = config.debugLogging and PerfClock() or nil
-        ExecuteInGameThread(Tick)
-    end
-    return false
-end)
-
-Log(
-    "Loaded (enabled=%s, factor=%.3f, poll=%d ms, debug=%s). Load a save, then check UE4SS.log for 'Applied'.",
-    tostring(config.enabled),
-    config.factor,
-    config.pollMilliseconds,
-    tostring(config.debugLogging)
-)
+StartupAttempt()
+Log("Loaded (enabled=%s, factor=%.3f, debug=%s). Applies at startup/save load or with easierparry on / <factor>; no periodic parry checks.", tostring(config.enabled), config.factor, tostring(config.debugLogging))

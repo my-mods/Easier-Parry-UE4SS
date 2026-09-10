@@ -1,3 +1,7 @@
+# Unreleased
+
+- Remove recurring parry checks; read INI/apply timing on startup or save load, and update settings immediately by console command.
+
 # Changes
 
 ## 1.2.2 — 2026-09-10

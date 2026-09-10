@@ -9,7 +9,7 @@ Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guar
 - Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
 - Forward dodges use native state-change and timed completion to restore held guard. Failed or cancelled attempts release their input suppression.
 - Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
-- The timing checker follows the current local player and attribute owner, checks once per second by default and writes only when needed. Save loading uses no global player-object searches.
+- Parry timing reads the INI and applies on startup/save load, or when you run easierparry on or a factor command. There is no recurring timing checker.
 
 ## Installation
 
@@ -34,7 +34,7 @@ The mod reads `EasierParryUE4SS.defaults.ini` first, then personal overrides. Om
 factor = 3.0
 ```
 
-Defaults are `enabled = true`, `factor = 2.0`, `pollMilliseconds = 1000` and `debugLogging = false`. Restart after direct INI edits. Loading saves and respawning do not reread configuration. Invalid numeric overrides retain inherited values. An unreadable personal file stops script initialization and logs the path without overwriting preferences.
+Defaults are `enabled = true`, `factor = 2.0`, `debugLogging = false`. Restart after direct INI edits. Loading a save rereads configuration. Invalid numeric overrides retain inherited values. An unreadable personal file stops script initialization and logs the path without overwriting preferences.
 
 **The native guard fixes are always active while the mod is installed.** `enabled` and the console on/off commands control only the timing multiplier. The former `dodgeInterruptsGuard` option is retired and ignored; its existing INI entry is preserved. Disable the complete mod in Vortex to restore stock guard behavior.
 
@@ -75,3 +75,5 @@ Debug logging is off by default. Use `easierparry debug on` to start a session c
 `PERF` lines report timing-worker average and maximum duration, the phase with the largest sample, checks taking at least 5 ms, maximum queue delay, attachment/repair/wait counts and failures. Queue delay is time waiting for the game thread, not time spent executing this mod. When enabled from launch, the first sample covers bootstrap; automatic summaries follow every 30 seconds, or at most every 5 seconds when checks are slow, stopping after 120 automatic reports. Manual status remains available. No extra timer or object search is created.
 
 Timing uses Windows `os.clock`, with millisecond granularity. A zero measurement means below clock resolution. Measurements include calls made by the timing worker, but exclude its performance-summary logging, GuardTrace diagnostics (reported separately from PERF durations), native guard abilities and whole-game/GPU frame time. Compare equivalent gameplay runs with other diagnostic logging disabled. With debug logging off, no performance clock is sampled and no PERF summary is emitted.
+
+Parry timing reads the INI on startup and save load, applies once when the player is ready, then stops. Console commands update both the personal INI and live multiplier. There are no recurring checks. Readiness attempts stop after success or 20 attempts; use `easierparry on` if the player was not ready in time. `pollMilliseconds` is unused. Native dodge/guard fixes are unchanged.

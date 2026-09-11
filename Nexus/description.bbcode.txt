@@ -1,43 +1,38 @@
 [b]Easier Parry and Dodge While Blocking[/b]
-More forgiving parries, with native held-guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 
-[b]Features[/b]
-[list]
-[*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.[/*]
-[*]Held guard resumes after native dodge suppression ends, unless an attack or actual guard release has ended guarding.[/*]
-[*]Personal settings stay separate from the mod and survive updates.[/*]
-[/list]
-Normal dodge eligibility, stamina and animation rules remain in effect. Stock attack/combo transitions can still end guard; a later dodge does not reactivate an ended guard ability. Release and press guard again in that case.
+Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
+
+- [b]2× parry timing window[/b] by default, configurable from [b]0.1× to 50×[/b], using the game's difficulty-adjusted baseline.
+- Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base game’s guard behavior.
+- Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
+- Forward dodges use native state-change and timed completion to restore held guard. Failed or cancelled attempts release their input suppression.
+- Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
+- Parry timing loads menu settings once at startup and reapplies that snapshot after save loading. There is no recurring timing checker.
 
 [b]Installation[/b]
-Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url]. Install the ZIP through Vortex, select [b]Root (game folder)[/b], then enable and deploy.
 
-For manual installation, copy the ZIP's Dawnwalker folder into the game root, preserving all subfolders. The native dodge asset and the UE4SS timing script are both required. Data contains only a package layout note.
+Requires a Dawnwalker-compatible [b]UE4SS 3.x[/b] installation. Import Easier-Parry-and-Dodge-While-Blocking.zip into Vortex, select [b]Root (game folder)[/b], then enable and deploy. Keep one enabled Easier Parry entry.
+
+The package contains the native dodge asset and the UE4SS timing script. Both are required. Data contains only an installer layout note; the payload uses explicit paths under Dawnwalker.
+
+For updates, close the game, disable the old entry and deploy, then replace/reinstall that entry through the installer using [b]Root (game folder)[/b] and deploy again. Reinstalling is necessary when changing from the older UE4SS mod type; redeploying its stored layout alone is insufficient.
+
+Back up your legacy personal INI before replacing an older version. After first use of this version, back up the generated settings.ini beside the mod’s mod_settings.ini before uninstalling or reinstalling. See SETTINGS.md for migration and restoration.
+
+To uninstall, disable/remove the entry in Vortex, deploy and restart the game. Restore your settings backup before launching after a reinstall.
 
 [b]Settings[/b]
-On first launch, the mod creates your personal INI here:
-[code]%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini[/code]
-Add the settings you want to override under [General], then restart the game:
-[code][General]
-factor = 2.0[/code]
-Use factor = 1.0 for vanilla parry timing. Native guard changes are always active while installed. The old dodgeInterruptsGuard setting is ignored and its console toggle is retired. The shipped EasierParryUE4SS.defaults.ini supplies any omitted settings; updates do not replace your personal file.
 
-UE4SS console shortcuts apply immediately and save your choice:
-[code]easierparry 3
-easierparry off
-easierparry on[/code]
-Use easierparry on/off to enable/disable only the timing multiplier, or easierparry status to check settings. Direct INI edits require a restart.
+Use [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/271]Mod Setting Menu 1.0.5 or later[/url] from the main menu. Press Apply, then fully restart the game. See SETTINGS.md (included with the mod) for all controls, first-use import and preference backups. Console settings commands are retired.
 
-[b]Updating and removing[/b]
-Before upgrading from an older version, copy Scripts/EasierParryUE4SS.ini from the old mod to the personal path above if you have custom settings and no personal file yet. Close the game, disable the old entry and deploy, then replace/reinstall that entry through the installer as [b]Root (game folder)[/b] and deploy again. Redeployment alone keeps the old layout. Keep one enabled entry.
+[b]Compatibility[/b]
 
-To uninstall, remove the mod through Vortex and deploy, or, for a manual install, remove its EasierParryUE4SS folder under ue4ss/Mods and its three zzz_EasierParryUE4SS_P containers under Dawnwalker/Content/Paks/~mods. Personal settings remain.
+Native assets are based on Steam build [b]25129649 / CL-257186[/b]. Updates to these game assets require compatibility review. The mod replaces:
 
-[b]Compatibility and source[/b]
-Native assets target Steam build 25129649 / CL-257186. Replaces GA_Dodge only. Other mods replacing that ability or overriding parry timing may conflict. Mods changing guard input may alter dodge recovery. Controller Tweaks and Remap changes different assets and can remain enabled.
+- /Game/_Dawnwalker/Combat/Abilities/Dodge/GA_Dodge
 
-[b]Diagnostics[/b]
-Set debugLogging = true under [General], or use easierparry debug on/off for this session, to capture bounded guard and timing diagnostics in ue4ss/UE4SS.log. Both are off by default. The retired guardTraceLogging key is ignored. Keep the log before another launch if testing fails.
+Controller Tweaks and Remap changes different assets and can remain enabled. Other mods replacing the dodge ability or modifying ParryWindowMultiplier may conflict. Do not assume differently named containers avoid asset conflicts; select one implementation of each ability.
 
-[url=https://github.com/my-mods/Easier-Parry-and-Dodge-While-Blocking]Source code on GitHub[/url]
-Created by [b]oOCamilleOo[/b]. Original mod code is licensed under [b]MIT[/b]; modification and redistribution are allowed with attribution and the included license. Underlying game assets remain the property of their respective rights holders.
+The guard correction targets guard held before a dodge. The base game controls attack/combo handoffs and guard cancellation without an overridden guard ability. Dodge retains the game's native attack-interruption, stamina, animation and combat eligibility logic. If a stock attack transition ends guard, dodge completion cannot reactivate it; release and press guard again.
+
+Created by [b]oOCamilleOo[/b]. Original mod code is under the MIT license (included with the mod); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in Nexus (included with the mod).

@@ -70,41 +70,10 @@ local function ReadIni(path)
     return contents, readError
 end
 
--- Windows rename refuses an existing destination, including a file created
--- after the initial read. Startup must never replace personal settings.
-local function CreateUserIni(path, contents)
-    if package.config:sub(1, 1) ~= "\\" then return nil, "Windows is required" end
-    local ok, token = pcall(os.tmpname)
-    if not ok then return nil, token end
-    os.remove(token)
-    local basename = token:match("([^/\\]+)$")
-    if not basename then return nil, "Invalid temporary filename" end
-    local temporary = path .. "." .. basename .. ".tmp"
-    local file, err = io.open(temporary, "a+b")
-    if not file then return nil, err end
-    if file:seek("end") ~= 0 then
-        file:close()
-        return nil, "Temporary file already occupied"
-    end
-    local written, writeError = file:write(contents)
-    local closed, closeError = file:close()
-    if not written or not closed then
-        os.remove(temporary)
-        return nil, writeError or closeError
-    end
-    local renamed, renameError = os.rename(temporary, path)
-    if not renamed then
-        os.remove(temporary)
-        local existing, existingError = ReadIni(path)
-        return existing, existingError or renameError
-    end
-    return contents
-end
-
 local function ApplyIni(contents, path)
     -- Editors may save a UTF-8 BOM before the first section header.
     contents = contents:gsub("^\239\187\191", "")
-    local section = ""
+    local section, seen = "", {}
     for line in contents:gmatch("[^\r\n]+") do
         local clean = Trim((line:gsub("[;#].*$", "")))
         local sectionName = string.match(clean, "^%[([^%]]+)%]$")
@@ -114,8 +83,11 @@ local function ApplyIni(contents, path)
             local key, value = string.match(clean, "^([%w_]+)%s*=%s*(.-)%s*$")
             if key ~= nil then
                 key = string.lower(key)
+                if seen[key] then return false end
+                seen[key] = true
                 if key == "enabled" or key == "debuglogging" or key == "dodgeinterruptsguard" then
                     local parsed = ParseBoolean(value)
+                    if parsed == nil then return false end
                     if parsed ~= nil then
                         local field = ({enabled="enabled", debuglogging="debugLogging", dodgeinterruptsguard="dodgeInterruptsGuard"})[key]
                         config[field] = parsed
@@ -123,7 +95,8 @@ local function ApplyIni(contents, path)
                 elseif key == "factor" or key == "pollmilliseconds" then
                     local parsed = tonumber(value)
                     if parsed == nil or parsed ~= parsed or math.abs(parsed) == math.huge then
-                        Log("WARNING: invalid %s in %s; keeping the inherited value", key, path)
+                        Log("WARNING: invalid %s in %s; import stopped", key, path)
+                        return false
                     elseif key == "factor" then
                         config.factor = math.max(0.1, math.min(50.0, parsed))
                     else
@@ -138,116 +111,23 @@ local function ApplyIni(contents, path)
 end
 
 local function LoadConfig()
-    local defaultsPath = ScriptIniPath(DEFAULTS_NAME)
-    local defaults, defaultsError = ReadIni(defaultsPath)
-    if defaults == nil then
-        Log("WARNING: cannot read shipped defaults %s: %s", defaultsPath, tostring(defaultsError))
-        return false
-    end
-    ApplyIni(defaults, defaultsPath)
-    local path = IniPath()
-    if path == nil then
-        Log("WARNING: LOCALAPPDATA unavailable; personal settings cannot be located")
-        return false
-    end
-    local personal, err, code = ReadIni(path)
-    if personal == nil and code == 2 then
-        local legacy, legacyError, legacyCode = ReadIni(ScriptIniPath(INI_NAME))
-        if legacy == nil and legacyCode ~= 2 then
-            Log("WARNING: cannot read legacy INI for migration: %s", tostring(legacyError))
-            return false
-        end
-        local initial = legacy or table.concat({
-            "; Personal Easier Parry settings - preserved across mod updates.",
-            "; Only uncomment settings you want to override, then restart the game.",
-            "; Omitted settings inherit EasierParryUE4SS.defaults.ini from the mod.",
-            "; Console commands update only the settings they change in this file.",
-            "", "[General]", "; enabled = true", "; factor = 2.0",
-            "; debugLogging = false",
-            "; Guard recovery is native and always active; the old dodge option is ignored.", "",
-        }, "\n")
-        personal, err = CreateUserIni(path, initial)
-        if personal ~= nil then Log("Personal INI ready at %s", path) end
-    end
-    if personal == nil then
-        Log("WARNING: cannot read/create personal INI %s: %s. Ensure Saved/Config exists, then restart; personal settings were not replaced.", path, tostring(err))
-        return false
-    end
-    ApplyIni(personal, path)
-    return true
-end
-
--- Patch only the selected setting in [General], retaining comments and other keys.
-local function SetIniValue(contents, key, value)
-    local section, found, hasGeneral = "", false, false
-    local newline = contents:find("\r\n", 1, true) and "\r\n" or "\n"
-    local function Header(line)
-        local clean = Trim((line:gsub("^\239\187\191", ""):gsub("[;#].*$", "")))
-        local name = clean:match("^%[([^%]]+)%]$")
-        return name and string.lower(Trim(name))
-    end
-    contents = contents:gsub("[^\r\n]+", function(line)
-        local header = Header(line)
-        if header then
-            section = header
-            if header == "general" then hasGeneral = true end
-        elseif section == "general" then
-            local prefix, name = line:match("^(%s*([%w_]+)%s*=%s*)")
-            if name and string.lower(name) == key then
-                found = true
-                local suffix = line:match("([ \t]*[;#].*)$") or line:match("([ \t]*)$") or ""
-                return prefix .. value .. suffix
-            end
-        end
-        return line
+    local directory = ScriptIniPath(''):gsub('[^/\\]*$', '')
+    local Store = dofile(directory .. 'SettingsStore.lua')
+    local schema = dofile(directory .. 'SettingsSchema.lua')
+    local values, err = Store.load(directory, schema, function()
+        local defaults, de = ReadIni(ScriptIniPath(DEFAULTS_NAME))
+        if not defaults then return nil, de end
+        if not ApplyIni(defaults, DEFAULTS_NAME) then return nil, "Invalid legacy defaults" end
+        local path = IniPath()
+        if not path then return nil, 'LOCALAPPDATA unavailable for legacy migration' end
+        local personal, pe, pc = ReadIni(path)
+        if not personal and pc == 2 then personal, pe, pc = ReadIni(ScriptIniPath(INI_NAME)) end
+        if not personal and pc ~= 2 then return nil, pe end
+        if personal and not ApplyIni(personal, path) then return nil, "Invalid legacy INI; original left unchanged" end
+        return {enabled=config.enabled and 1 or 0, factor=config.factor, debugLogging=config.debugLogging and 1 or 0}
     end)
-    if found then return contents end
-    if not hasGeneral then
-        if contents ~= "" and not contents:match("[\r\n]$") then contents = contents .. newline end
-        return contents .. "[General]" .. newline .. key .. " = " .. value .. newline
-    end
-    local inserted = false
-    return (contents:gsub("[^\r\n]+", function(line)
-        if not inserted and Header(line) == "general" then
-            inserted = true
-            return line .. newline .. key .. " = " .. value
-        end
-        return line
-    end))
-end
-
-local function SaveConfig(keys)
-    local path = IniPath()
-    if not path then Log("WARNING: personal INI path unavailable; settings remain active for this session"); return false end
-    -- Read only to preserve unrelated edits; these bytes never replace session settings.
-    local file, _, code = io.open(path, "rb")
-    local contents = ""
-    if file then
-        contents = file:read("*a")
-        file:close()
-    elseif code ~= 2 then
-        contents = nil
-    end
-    if contents == nil then
-        Log("WARNING: could not read %s for saving; settings remain active for this session", path)
-        return false
-    end
-    for _, key in ipairs(keys) do
-        local value = key == "factor" and string.format("%.17g", config[key]) or tostring(config[key])
-        contents = SetIniValue(contents, string.lower(key), value)
-    end
-    file = io.open(path, "wb")
-    if file == nil then
-        Log("WARNING: could not save %s; settings remain active for this session", path)
-        return false
-    end
-    local written = file:write(contents)
-    local closed = file:close()
-    if not written or not closed then
-        Log("WARNING: saving %s failed; settings remain active for this session", path)
-        return false
-    end
-    Log("Saved %s to %s", table.concat(keys, ", "), path)
+    if not values then Log('Settings rejected: %s', tostring(err)); return false end
+    config.enabled=values.enabled==1;config.factor=values.factor;config.debugLogging=values.debugLogging==1
     return true
 end
 
@@ -589,15 +469,13 @@ local function StartupAttempt()
             reloadRequested = false
             RestoreBaseline()
             bootstrapAttempted = false
-            if not LoadConfig() then config.enabled = false; startupFinished = true; return end
-            SetGuardTracing(config.debugLogging)
         end
         if startupFinished or not config.enabled then return end
         startupAttempts = startupAttempts + 1
         Tick()
         if not startupFinished then
             if startupAttempts < 20 then StartupAttempt()
-            else Log("Player not ready; stopped startup/load attempts. Run easierparry on after loading to apply timing.") end
+            else Log("Player not ready; stopped startup/load attempts. Load a save or restart to retry.") end
         end
     end)
 end
@@ -620,99 +498,5 @@ SetGuardTracing = function(enabled)
 end
 SetGuardTracing(config.debugLogging)
 
-local function HandleCommand(command, argument)
-    if command == "debug" then
-        if argument == "on" then
-            config.debugLogging = true
-            SetGuardTracing(true)
-            perf, queuedAt = nil, nil
-            Log("Debug logging enabled for this session; PERF captures worker time and queue delay, not whole-game frame time")
-        elseif argument == "off" then
-            if config.debugLogging then PerfReport("final", PerfClock() or 0, false) end
-            config.debugLogging = false
-            SetGuardTracing(false)
-            perf, queuedAt = nil, nil
-            Log("Debug logging disabled for this session")
-        else
-            Log("Debug logging enabled=%s; commands: easierparry debug on | off | status", tostring(config.debugLogging))
-            if config.debugLogging then PerfReport("status", PerfClock() or 0, false) end
-        end
-        return true
-    end
-
-    if command == "dodge" then
-        Log("Guard recovery now uses native game abilities and is always active while this mod is installed. The old dodge toggle is retired; your personal INI is preserved.")
-        return true
-    end
-
-    if command == "status" then
-        Log("Native held-guard fixes are supplied by the installed game assets; enabled controls the timing multiplier only.")
-        if active ~= nil then
-            Log(
-                "enabled=%s factor=%.3f baseline=%.4f/%.4f target=%.4f/%.4f",
-                tostring(config.enabled),
-                config.factor,
-                active.baselineBase,
-                active.baselineCurrent,
-                active.targetBase,
-                active.targetCurrent
-            )
-        else
-            Log("enabled=%s factor=%.3f; waiting for a player", tostring(config.enabled), config.factor)
-        end
-        return true
-    end
-
-    if command == "off" then
-        config.enabled = false
-        startupFinished = true
-        RestoreBaseline()
-        Log("Parry timing disabled; native guard fixes remain active.")
-        SaveConfig({"enabled"})
-        return true
-    end
-
-    if command == "on" then
-        bootstrapAttempted = false
-        config.enabled = true
-        Log("Parry timing enabled; native guard fixes remain active.")
-        SaveConfig({"enabled"})
-        Tick()
-        return true
-    end
-
-    if command == "reload" then
-        Log("Reloading INI settings and applying timing.")
-        RestoreBaseline()
-        if LoadConfig() then bootstrapAttempted = false; SetGuardTracing(config.debugLogging); Tick() end
-        return true
-    end
-
-    local runtimeFactor = tonumber(command)
-    if runtimeFactor ~= nil and runtimeFactor == runtimeFactor and math.abs(runtimeFactor) ~= math.huge then
-        RestoreBaseline()
-        config.factor = math.max(0.1, math.min(50.0, runtimeFactor))
-        config.enabled = true
-        Log("Using factor %.3f", config.factor)
-        SaveConfig({"factor", "enabled"})
-        bootstrapAttempted = false
-        Tick()
-        return true
-    end
-
-    Log("Commands: easierparry status | on | off | <factor> | debug on/off/status")
-    return true
-end
-
-if RegisterConsoleCommandHandler ~= nil then
-    RegisterConsoleCommandHandler("easierparry", function(fullCommand, parameters, ar)
-        -- Copy only owned text into the deferred callback, never callback parameters.
-        local command = string.lower(tostring(parameters[1] or "status"))
-        local argument = string.lower(tostring(parameters[2] or "status"))
-        ExecuteInGameThread(function() HandleCommand(command, argument) end)
-        return true
-    end)
-end
-
 StartupAttempt()
-Log("Loaded (enabled=%s, factor=%.3f, debug=%s). Applies at startup/save load or with easierparry on / <factor>; no periodic parry checks.", tostring(config.enabled), config.factor, tostring(config.debugLogging))
+Log("Loaded (enabled=%s, factor=%.3f, debug=%s). Use Mod Settings, Apply, then restart; no periodic settings checks.", tostring(config.enabled), config.factor, tostring(config.debugLogging))

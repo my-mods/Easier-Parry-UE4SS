@@ -22,21 +22,17 @@ local config = {
 local active = nil
 local engine, gameplayStatics = nil, nil
 local bootstrapAttempted = false
-local pending = false
-local startupFinished, startupAttempts = false, 0
+local startupFinished = false
 local reloadRequested = false
+local readinessGeneration = 0
 local SetGuardTracing
 local lastFailure = nil
 
-local function Log(message, ...)
-    local ok, rendered = pcall(string.format, message, ...)
-    if not ok then rendered = tostring(message) end
-    print(string.format("[%s] %s\n", MOD_NAME, rendered))
-end
-
-local function Debug(message, ...)
-    if config.debugLogging then Log(message, ...) end
-end
+local scriptDirectory = assert(SCRIPT_SOURCE:gsub('^@',''):match('^(.*[/\\])'))
+local Diagnostics = dofile(scriptDirectory .. 'UE4SSCommonDiagnostics.lua')
+local diagnostics = Diagnostics.new({prefix='['..MOD_NAME..'] ',output=function(text) print(text..'\n') end})
+local function Log(message, ...) diagnostics.log(message, ...) end
+local function Debug(message, ...) diagnostics.debug(message, ...) end
 
 local function Trim(value)
     return (tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", ""))
@@ -391,11 +387,7 @@ end
 -- No profiler timers, object lookups, or retained samples; only fixed-size counters.
 local perf, queuedAt = nil, nil
 local PERF_REPORT_LIMIT = 120
-local function PerfClock()
-    local ok, value = pcall(os.clock)
-    if ok and type(value) == "number" and value >= 0 and value < math.huge then return value end
-    return nil
-end
+local function PerfClock() return diagnostics.now() end
 local function NewPerf(now)
     return {count=0, total=0, max=0, queueMax=0, slow=0, errors=0,
         attach=0, repair=0, waiting=0, reports=0, lastReport=now,
@@ -416,7 +408,6 @@ local function PerfReport(label, now, automatic)
 end
 
 local function Tick()
-    pending = false
     local start = config.debugLogging and PerfClock() or nil
     local queued = queuedAt
     queuedAt = nil
@@ -438,11 +429,12 @@ local function Tick()
     perf.clockFailed = false
     local elapsed = math.floor((finish - start) * 1000 + 0.5)
     local phase = bootstrapping and "bootstrap" or (ok and (outcome or "steady") or "error")
-    perf.count = perf.count + 1
-    perf.total = perf.total + elapsed
+    diagnostics.sample('worker',elapsed)
+    local timing = diagnostics.snapshot().timings.worker
+    perf.count, perf.total = timing.n, timing.total
     if elapsed >= perf.max then perf.max = elapsed; perf.worstPhase = phase end
     if queued and queued <= start then perf.queueMax = math.max(perf.queueMax, math.floor((start-queued)*1000 + 0.5)) end
-    if elapsed >= 5 then perf.slow = perf.slow + 1 end
+    perf.slow = timing.slow
     if outcome == "attach" then perf.attach = perf.attach + 1 end
     if outcome == "repair" then perf.repair = perf.repair + 1 end
     if outcome == "waiting" then perf.waiting = perf.waiting + 1 end
@@ -459,29 +451,39 @@ local function Tick()
 end
 
 if not LoadConfig() then return end
--- Only startup/load events may start a bounded readiness attempt.
--- Once applied (or timed out), no maintenance worker remains.
-local function StartupAttempt()
-    if startupFinished or (not config.enabled and not reloadRequested) or pending or startupAttempts >= 20 then return end
-    pending = true
-    ExecuteInGameThreadWithDelay(250, function()
-        pending = false
+diagnostics = Diagnostics.new({debugLogging=config.debugLogging,prefix='['..MOD_NAME..'] ',
+    output=function(text) print(text..'\n') end,slowCallbackMs=5})
+if type(ExecuteInGameThreadWithDelay)~='function' or type(CancelDelayedAction)~='function' then
+    Log('Readiness requires game-thread one-shot scheduling and cancellation.'); return
+end
+local readiness = dofile(scriptDirectory .. 'UE4SSCommonRetry.lua').new({
+    schedule=ExecuteInGameThreadWithDelay,cancel=CancelDelayedAction,delay=250,limit=20,
+    attempt=function()
+        local generation=readinessGeneration
         if reloadRequested then
-            reloadRequested = false
+            reloadRequested=false
             RestoreBaseline()
-            bootstrapAttempted = false
+            bootstrapAttempted=false
         end
-        if startupFinished or not config.enabled then return end
-        startupAttempts = startupAttempts + 1
+        if startupFinished or not config.enabled then return 'stop' end
         Tick()
-        if not startupFinished then
-            if startupAttempts < 20 then StartupAttempt()
-            else Log("Player not ready; stopped startup/load attempts. Load a save or restart to retry.") end
-        end
-    end)
+        if generation~=readinessGeneration then startupFinished=false;return 'retry' end
+        return startupFinished and 'done' or 'retry'
+    end,
+    onComplete=function(reason)
+        if reason=='exhausted' then Log('Player not ready; stopped startup/load attempts. Load a save or restart to retry.') end
+    end,
+    onError=function(err) Log('Readiness failed: %s',tostring(err)) end,
+})
+local function StartupAttempt()
+    if startupFinished or (not config.enabled and not reloadRequested) then return end
+    readiness.wake()
 end
 RegisterLoadMapPostHook(function()
-    startupFinished, startupAttempts, reloadRequested = false, 0, true
+    readinessGeneration=readinessGeneration+1
+    startupFinished, reloadRequested = false, true
+    local ok, err = readiness.reset()
+    if not ok then Log('Readiness cancellation failed: %s',tostring(err)); return end
     StartupAttempt()
 end)
 -- One diagnostics switch controls both timing summaries and guard tracing.

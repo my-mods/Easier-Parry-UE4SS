@@ -1,0 +1,167 @@
+[
+  {
+    "type": "attribute",
+    "key": "customFileName",
+    "value": "Easier Parry and Dodge While Blocking"
+  },
+  {
+    "type": "attribute",
+    "key": "version",
+    "value": "1.2.3"
+  },
+  {
+    "type": "attribute",
+    "key": "description",
+    "value": "Configurable parry timing with guard recovery after dodging and base-game attack behavior."
+  },
+  {
+    "type": "attribute",
+    "source": "mod.manifest",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "README.txt",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSE.txt",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "CHANGELOG.md",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "RELEASE-NOTES.md",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "Data\\Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "SETTINGS.md",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSES/EasierParryUE4SS-ue4ss-common.txt",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  },
+  {
+    "type": "attribute",
+    "source": "LICENSES\\EasierParryUE4SS-ue4ss-common.txt",
+    "key": "easierParryReleaseMaterials",
+    "value": [
+      "mod.manifest",
+      "README.txt",
+      "LICENSE.txt",
+      "CHANGELOG.md",
+      "RELEASE-NOTES.md",
+      "Data/Easier-Parry-UE4SS-PACKAGE-LAYOUT.txt",
+      "SETTINGS.md",
+      "LICENSES/EasierParryUE4SS-ue4ss-common.txt"
+    ]
+  }
+]

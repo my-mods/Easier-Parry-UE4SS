@@ -1,5 +1,8 @@
 -- Read-only, event-driven held-guard diagnostics. MIT; see LICENSE.txt.
+local directory = assert(debug.getinfo(1,'S').source:gsub('^@',''):match('^(.*[/\\])'))
+local Hooks = dofile(directory .. 'UE4SSCommonHooks.lua')
 return function(log)
+    local hooks = Hooks.new({RegisterHook=RegisterHook,UnregisterHook=UnregisterHook})
     local active = true
     local stopped, registered = false, {}
     local queue, head, sequence, dropped = {}, 1, 0, 0
@@ -168,13 +171,18 @@ return function(log)
         if registered[path] and live(registered[path][3]) then return true end
         local lookupOK, fn = pcall(StaticFindObject, path)
         if not lookupOK or not live(fn) then return false, 'UFunction not loaded' end
-        local ok, first, second = pcall(RegisterHook, path, pre, post)
-        if ok and type(first) == 'number' and type(second) == 'number' then
+        if registered[path] then
+            local removed, err = hooks.remove(path)
+            if not removed then return false, 'Hook cleanup failed: '..tostring(err) end
+            registered[path] = nil
+        end
+        local first, second = hooks.register(path, path, pre, post)
+        if first then
             registered[path] = {first, second, fn}
             record('HOOK_READY ' .. path)
             return true
         end
-        return false, tostring(first)
+        return false, tostring(second)
     end
     local nativeIndex = 1
     local function schedule(name, reset)

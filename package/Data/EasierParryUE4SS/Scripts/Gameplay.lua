@@ -105,7 +105,7 @@ end
 
 local function LoadConfig()
     local directory = ScriptIniPath(''):gsub('[^/\\]*$', '')
-    local Store = dofile(directory .. 'SettingsStore.lua')
+    local Store = dofile(directory .. 'ParrySettings.lua')
     local schema = dofile(directory .. 'SettingsSchema.lua')
     local values, err = Store.load(directory, schema, function()
         local defaults, de = ReadIni(ScriptIniPath(DEFAULTS_NAME))
@@ -117,11 +117,11 @@ local function LoadConfig()
         if not personal and pc == 2 then path = ScriptIniPath(INI_NAME); personal, pe, pc = ReadIni(path) end
         if not personal and pc ~= 2 then return nil, pe end
         if personal and not ApplyIni(personal, path) then return nil, "Invalid legacy INI; original left unchanged" end
-        return {enabled=config.enabled and 1 or 0, factor=config.factor, debugLogging=config.debugLogging and 1 or 0},
+        return {enabled=config.enabled and 1 or 0, parryWindowPercent=config.factor*100, debugLogging=config.debugLogging and 1 or 0},
             nil, personal and {{path=path, text=personal}} or nil
     end)
     if not values then Log('Settings rejected: %s', tostring(err)); return false end
-    config.enabled=values.enabled==1;config.factor=values.factor;config.debugLogging=values.debugLogging==1
+    config.enabled=values.enabled==1;config.factor=values.parryWindowPercent/100;config.debugLogging=values.debugLogging==1
     return true
 end
 

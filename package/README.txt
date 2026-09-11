@@ -7,6 +7,7 @@ Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guar
 - **200% parry timing window** by default (2 times normal), adjustable from **10% to 5,000%** of the game's difficulty-adjusted baseline. Choose from 20 percentages with closer spacing at low values and wider gaps at high values.
 - Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base game’s guard behavior.
 - Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
+- **Dodge while blocking** can be turned Off in Mod Settings independently of parry timing. It defaults to On; Off blocks the player's dodge ability while block is held.
 - Forward dodges use native state-change and timed completion to restore held guard. Failed or cancelled attempts release their input suppression.
 - Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
 - Parry timing loads a fresh settings snapshot after save loading. There is no recurring timing checker.
@@ -49,13 +50,26 @@ Missing, duplicate or invalid settings stop configuration loading and are report
 
 | Group | Setting | Choices or range |
 | --- | --- | --- |
-| General | Parry timing multiplier | Off, On |
-| Parry | Parry window multiplier | 0.1 to 50 |
+| General | Parry timing adjustment | Off, On |
+| Parry | Parry window | 20 percentage choices from 10% to 5,000% |
+| Dodge | Dodge while blocking | Off, On (default) |
 | Diagnostics | Logging | Off, On |
+
+**Parry window presets:** 10%, 25%, 50%, 75%, 100%, 125%, 150%, 175%, 200%, 250%, 300%, 400%, 500%, 750%, 1,000%, 1,500%, 2,000%, 3,000%, 4,000%, and 5,000%. The spacing keeps smaller adjustments close together and reaches large windows quickly.
+
+**100%** is the normal difficulty-adjusted window; **200%** is twice as long and remains the default. **10%** is one tenth as long; **5,000%** is 50 times as long. This changes the window for a successful parry, not animation speed.
+
+Reset restores the 200% default. For manual INI edits, `parryWindowPercent` accepts values from 10 to 5000. Gameplay accepts values between the menu choices; opening the menu page requires one of the listed values.
+
+When upgrading from multiplier settings, load a save once before opening this page. Existing multipliers are converted to percentages without changing the window. Values between the menu choices retain their precision. The original menu settings are retained as `settings.ini.before-percentages`, including unrelated text and comments. If conversion fails, keep the original and any `.before-percentages.new` transaction file for recovery. No settings file is replaced with defaults during this conversion.
+
+**Dodge while blocking:** On keeps the mod's dodge and guard recovery behavior. Off blocks the player's dodge ability while the block input is held. Release block to dodge. This control remains available when Parry timing adjustment is Off. Press Apply, then load a save. It uses the game's native ability activation check; it does not poll inputs or settings.
+
+When upgrading existing menu settings, the first save load adds `dodgeWhileBlocking = 1` while preserving saved preferences and unrelated text. The original file is retained as `settings.ini.before-dodge-setting`. If this upgrade fails, preserve that backup and any `.before-dodge-setting.new` transaction file for recovery. Older timing multiplier conversion still keeps its separate `.before-percentages` backup.
 
 Console commands are not used to change settings.
 
-Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles, labeled choices and sliders; the numeric representation in settings.ini is an implementation detail.
+Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles and labeled percentage choices; the numeric representation in settings.ini is an implementation detail.
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 

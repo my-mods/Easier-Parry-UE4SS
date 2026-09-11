@@ -10,6 +10,7 @@ Missing, duplicate or invalid settings stop configuration loading and are report
 | --- | --- | --- |
 | General | Parry timing adjustment | Off, On |
 | Parry | Parry window | 20 percentage choices from 10% to 5,000% |
+| Dodge | Dodge while blocking | Off, On (default) |
 | Diagnostics | Logging | Off, On |
 
 **Parry window presets:** 10%, 25%, 50%, 75%, 100%, 125%, 150%, 175%, 200%, 250%, 300%, 400%, 500%, 750%, 1,000%, 1,500%, 2,000%, 3,000%, 4,000%, and 5,000%. The spacing keeps smaller adjustments close together and reaches large windows quickly.
@@ -19,6 +20,10 @@ Missing, duplicate or invalid settings stop configuration loading and are report
 Reset restores the 200% default. For manual INI edits, `parryWindowPercent` accepts values from 10 to 5000. Gameplay accepts values between the menu choices; opening the menu page requires one of the listed values.
 
 When upgrading from multiplier settings, load a save once before opening this page. Existing multipliers are converted to percentages without changing the window. Values between the menu choices retain their precision. The original menu settings are retained as `settings.ini.before-percentages`, including unrelated text and comments. If conversion fails, keep the original and any `.before-percentages.new` transaction file for recovery. No settings file is replaced with defaults during this conversion.
+
+**Dodge while blocking:** On keeps the mod's dodge and guard recovery behavior. Off blocks the player's dodge ability while the block input is held. Release block to dodge. This control remains available when Parry timing adjustment is Off. Press Apply, then load a save. It uses the game's native ability activation check; it does not poll inputs or settings.
+
+When upgrading existing menu settings, the first save load adds `dodgeWhileBlocking = 1` while preserving saved preferences and unrelated text. The original file is retained as `settings.ini.before-dodge-setting`. If this upgrade fails, preserve that backup and any `.before-dodge-setting.new` transaction file for recovery. Older timing multiplier conversion still keeps its separate `.before-percentages` backup.
 
 Console commands are not used to change settings.
 

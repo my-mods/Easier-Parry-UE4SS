@@ -6,8 +6,9 @@ local legacySchema = {
     {key='factor', default=2, min=0.1, max=50},
     {key='debugLogging', default=0, values={0,1}},
 }
-local function replace(store, path, original, updated)
-    local backup, temporary = path..backupSuffix, path..backupSuffix..'.new'
+local function replace(store, path, original, updated, suffix)
+    suffix = suffix or backupSuffix
+    local backup, temporary = path..suffix, path..suffix..'.new'
     for _, name in ipairs({backup, temporary}) do
         local data, err, code = store.read(name)
         if data or code~=2 then return nil, 'Recover existing settings file: '..name..': '..tostring(err or '') end
@@ -15,7 +16,7 @@ local function replace(store, path, original, updated)
     local created, err = store.create(temporary, updated)
     if not created then return nil, err end
     if store.read(temporary)~=updated or store.read(path)~=original then
-        os.remove(temporary); return nil, 'Settings changed during percentage conversion'
+        os.remove(temporary); return nil, 'Settings changed during conversion'
     end
     local saved, se = os.rename(path, backup)
     if not saved then os.remove(temporary); return nil, se end
@@ -30,7 +31,7 @@ local function replace(store, path, original, updated)
     if store.read(path)~=updated then return nil, 'Cannot verify settings; recover '..backup end
     return true
 end
-function M.load(directory, schema, seed)
+local function loadTiming(directory, schema, seed)
     local Store = dofile(directory..'SettingsStore.lua')
     local path = Store.path(directory)
     local text, err, code = Store.read(path)
@@ -65,6 +66,55 @@ function M.load(directory, schema, seed)
     values, parseError=Store.parse(updated,schema)
     if not values then return nil, parseError end
     local ok, upgradeError=replace(Store,path,text,updated)
+    if not ok then return nil, upgradeError end
+    return values
+end
+
+function M.load(directory, schema, seed)
+    local Store = dofile(directory..'SettingsStore.lua')
+    local path, suffix = Store.path(directory), '.before-dodge-setting'
+    local text, err, code = Store.read(path)
+    if not text then
+        if code ~= 2 then return nil, err end
+        for _, name in ipairs({path..suffix, path..suffix..'.new'}) do
+            local data, e, c = Store.read(name)
+            if data or c ~= 2 then return nil, 'Recover '..name..': '..tostring(e or '') end
+        end
+        return loadTiming(directory, schema, seed)
+    end
+    local values, parseError = Store.parse(text, schema)
+    if values then return values end
+    if parseError ~= 'Missing setting: dodgeWhileBlocking'
+        and parseError ~= 'Missing setting: parryWindowPercent' then return nil, parseError end
+    -- Validate an existing dodge preference before any older timing conversion.
+    local dodgeSchema = {{key='dodgeWhileBlocking',default=1,values={0,1}}}
+    local dodge, dodgeError = Store.parse(text, dodgeSchema)
+    if not dodge and dodgeError ~= 'Missing setting: dodgeWhileBlocking' then return nil, dodgeError end
+    local timingSchema = {}
+    for _, setting in ipairs(schema) do
+        if setting.key ~= 'dodgeWhileBlocking' then timingSchema[#timingSchema+1] = setting end
+    end
+    local timing, timingError = loadTiming(directory, timingSchema, seed)
+    if not timing then return nil, timingError end
+    text, err = Store.read(path)
+    if not text then return nil, err end
+    values, parseError = Store.parse(text, schema)
+    if values then return values end
+    if parseError ~= 'Missing setting: dodgeWhileBlocking' then return nil, parseError end
+    local newline = text:find('\r\n',1,true) and '\r\n' or '\n'
+    local count = 0
+    local updated = text:gsub('[^\r\n]+', function(line)
+        local clean = line:gsub('^\239\187\191',''):gsub('[;#].*$','')
+        if clean:match('^%s*%[Settings%]%s*$') then
+            count = count + 1
+            return line..newline..'dodgeWhileBlocking = 1'
+        end
+        return line
+    end)
+    if count ~= 1 then return nil, 'Expected one Settings section for dodge setting upgrade' end
+    values, parseError = Store.parse(updated, schema)
+    if not values then return nil, parseError end
+    local ok, upgradeError = replace(Store,path,text,updated,suffix)
     if not ok then return nil, upgradeError end
     return values
 end

@@ -16,6 +16,7 @@ local config = {
     factor = 2.0,
     pollMilliseconds = 1000, -- Accepted for old INIs; unused (no periodic checks).
     debugLogging = false,
+    dodgeWhileBlocking = true,
     dodgeInterruptsGuard = false, -- Legacy INI compatibility; native guard assets own this behavior.
 }
 
@@ -122,6 +123,7 @@ local function LoadConfig()
     end)
     if not values then Log('Settings rejected: %s', tostring(err)); return false end
     config.enabled=values.enabled==1;config.factor=values.parryWindowPercent/100;config.debugLogging=values.debugLogging==1
+    config.dodgeWhileBlocking=values.dodgeWhileBlocking==1
     return true
 end
 
@@ -143,7 +145,7 @@ local function IsDefaultObject(object)
 end
 
 -- Guard input and dodge suspension are handled by the native ability assets.
--- This script only maintains the configurable parry timing attribute.
+-- The optional dodge setting adds a native activation requirement at save load.
 
 local function NearlyEqual(left, right)
     return type(left) == "number" and type(right) == "number"
@@ -453,8 +455,13 @@ if type(ExecuteInGameThreadWithDelay)~='function' or type(CancelDelayedAction)~=
     Log('Readiness requires game-thread one-shot scheduling and cancellation.'); return
 end
 Session.onClose(RestoreBaseline)
+local dodgeReady
+if not config.dodgeWhileBlocking then
+    dodgeReady = dofile(scriptDirectory..'DodgeSettings.lua').start(FindPlayerAttributeSet, Log, diagnostics)
+end
 local pending = false
 local function applyReady()
+    if dodgeReady then dodgeReady() end
     if pending or not config.enabled then return end
     pending = true
     ExecuteInGameThreadWithDelay(16, function()

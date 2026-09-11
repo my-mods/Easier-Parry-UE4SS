@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add an independent Dodge while blocking toggle to Mod Settings, enabled by default.
+
 - Restore parry settings after loads with missed loading notifications or delayed player initialization.
 
 - Simplify diagnostics to a single Logging switch at the end of Mod Settings.

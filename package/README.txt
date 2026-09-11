@@ -51,11 +51,13 @@ Missing, duplicate or invalid settings stop configuration loading and are report
 | --- | --- | --- |
 | General | Parry timing multiplier | Off, On |
 | Parry | Parry window multiplier | 0.1 to 50 |
-| Diagnostics | Debug logging | Off, On |
+| Diagnostics | Logging | Off, On |
 
 Console commands are not used to change settings.
 
 Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles, labeled choices and sliders; the numeric representation in settings.ini is an implementation detail.
+
+**Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
 
 Bundled library

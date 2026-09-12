@@ -27,6 +27,15 @@ Conditional rows and groups show relevant controls as you edit. Hidden options k
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
-When standard Lua Blueprint hooks are unavailable, GuardTrace records the first dispatcher error once per mod launch and stops those registration attempts. Native guard, dodge-request, attack-queue and combo tracing remain enabled across save loads. Actually unloaded functions retain finite retries after relevant construction events. Restart the game after changing the loader profile to check its capabilities again.
+When standard Lua Blueprint hooks are unavailable, GuardTrace records the first dispatcher error once per mod launch and stops those registration attempts. Native guard, dodge-request, attack-queue and combo tracing remain enabled across save loads. Additional native diagnostics observe the game's existing calls:
+
+- `dodge.state_check`: the actual `CanEnterState(8)` result, with the current combat state. State 8 is dodge; this observes an eligibility check, not a new input request.
+- `dodge.commit`: the actual ability-commit result. A false result records a rejected commit without attempting it again.
+- `dodge.animation`: the direction tag returned by animation selection. It confirms selection was reached, not that a visible animation frame was rendered.
+- `dodge.cancel.pre/post` and `dodge.end_call.pre/post`: explicit native cancellation/end calls, with input and suppression tags before and after. Block and light/heavy attack abilities receive the same commit/end/cancel observations when they call those functions.
+
+These events restore decision details without requiring Blueprint hooks. They do not reproduce every Blueprint activation/end notification or tag callback: cancellation performed entirely in native engine code may bypass the observed Blueprint-callable end/cancel functions. A request with no later decision event is inconclusive; it may have been rejected earlier or omitted by capture limits. No successful activation or complete cancellation history is inferred from a request alone.
+
+The trace is read-only, filters exact ability classes and local player contexts, and uses bounded event/snapshot/output budgets. It does not retry inputs, call eligibility/commit functions to obtain diagnostic results, retain borrowed return structs, scan for objects during events, or add an idle polling worker. Actually unloaded Blueprint functions retain finite retries after relevant construction events. Restart the game after changing the loader profile to check its capabilities again.
 
 Trace output is limited to 2,048 records per save-load capture. Load a save for a new capture. Logging Off disables diagnostic capture and pending trace work without changing parry timing or dodge behavior.

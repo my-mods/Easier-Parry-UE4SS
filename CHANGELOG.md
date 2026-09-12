@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add native dodge eligibility/commit results, animation selection, combat-state snapshots and explicit ability end/cancel diagnostics when Blueprint tracing is unavailable.
+
 - Stop repeated Blueprint diagnostic hook failures when the Lua dispatcher is unavailable, while preserving native combat tracing across save loads.
 
 - Add an independent Dodge while blocking toggle to Mod Settings, enabled by default.

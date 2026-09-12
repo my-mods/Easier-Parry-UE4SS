@@ -23,7 +23,7 @@ Requires a Dawnwalker-compatible **UE4SS 3.x** installation. The archive include
 
 Use [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) from the main menu. Press Apply, then load a save. See [SETTINGS.md](SETTINGS.md) for all controls and supported settings. Console settings commands are retired.
 
-With Logging On, native combat tracing remains available when the loader cannot register Blueprint diagnostics. The unavailable dispatcher is reported once per mod launch; save loads do not restart those failed attempts.
+With Logging On, native combat tracing records dodge state-check and ability-commit results, selected dodge direction, explicit ability end/cancel calls, and combat-state/input-tag snapshots. These diagnostics work independently of Blueprint tracing. An unavailable Blueprint dispatcher is reported once per mod launch; save loads do not restart those failed attempts.
 
 Created by **oOCamilleOo**. Original mod code is under the [MIT license](LICENSE); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in [Nexus](Nexus/README.txt).
 

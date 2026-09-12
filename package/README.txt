@@ -1,9 +1,9 @@
 # Easier Parry and Dodge While Blocking
 
-Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
+Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base gameâ€™s guard behavior.
 
 - **200% parry timing window** by default (2 times normal), adjustable from **10% to 5,000%** of the game's difficulty-adjusted baseline. Choose from 20 percentages with closer spacing at low values and wider gaps at high values.
-- Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base game’s guard behavior.
+- Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base gameâ€™s guard behavior.
 - Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
 - **Dodge while blocking** can be turned Off in Mod Settings independently of parry timing. It defaults to On; Off blocks the player's dodge ability while block is held.
 - Forward dodges use native state-change and timed completion to restore held guard. Failed or cancelled attempts release their input suppression.
@@ -21,7 +21,7 @@ Requires a Dawnwalker-compatible **UE4SS 3.x** installation. The archive include
 
 Use [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) from the main menu. Press Apply, then load a save. See [SETTINGS.md](SETTINGS.md) for all controls and supported settings. Console settings commands are retired.
 
-With Logging On, native combat tracing remains available when the loader cannot register Blueprint diagnostics. The unavailable dispatcher is reported once per mod launch; save loads do not restart those failed attempts.
+With Logging On, native combat tracing records dodge state-check and ability-commit results, selected dodge direction, explicit ability end/cancel calls, and combat-state/input-tag snapshots. These diagnostics work independently of Blueprint tracing. An unavailable Blueprint dispatcher is reported once per mod launch; save loads do not restart those failed attempts.
 
 Created by **oOCamilleOo**. Original mod code is under the [MIT license](LICENSE); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in [Nexus](Nexus/README.txt).
 
@@ -32,11 +32,11 @@ This mod includes the MIT-licensed ue4ss-common Lua helpers (https://github.com/
 
 # Settings
 
-Install [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) and UE4SS through Vortex. On first use, load a save once to initialize the settings file, then return to Main Menu > Mod Settings > All Mods. Select this mod, change settings and press Apply. **Load a save after Apply.** Restore discards unapplied changes; Reset selects this mod’s defaults.
+Install [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) and UE4SS through Vortex. On first use, load a save once to initialize the settings file, then return to Main Menu > Mod Settings > All Mods. Select this mod, change settings and press Apply. **Load a save after Apply.** Restore discards unapplied changes; Reset selects this modâ€™s defaults.
 
 The stable menu ID is `oOCamilleOo_EasierParryAndDodgeWhileBlocking`. The mod generates `settings.ini` beside `mod_settings.ini` in its UE4SS folder. That file stores the active preferences and is not shipped in the archive. Supported legacy preferences are imported on first use.
 
-Missing, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Settings are read only when a save loads. Waiting at the main menu performs no settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
+Missing, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menuâ€™s recovery instructions. Settings are read only when a save loads. Waiting at the main menu performs no settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
 
 | Group | Setting | Choices or range |
 | --- | --- | --- |
@@ -59,6 +59,15 @@ Conditional rows and groups show relevant controls as you edit. Hidden options k
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
 
-When standard Lua Blueprint hooks are unavailable, GuardTrace records the first dispatcher error once per mod launch and stops those registration attempts. Native guard, dodge-request, attack-queue and combo tracing remain enabled across save loads. Actually unloaded functions retain finite retries after relevant construction events. Restart the game after changing the loader profile to check its capabilities again.
+When standard Lua Blueprint hooks are unavailable, GuardTrace records the first dispatcher error once per mod launch and stops those registration attempts. Native guard, dodge-request, attack-queue and combo tracing remain enabled across save loads. Additional native diagnostics observe the game's existing calls:
+
+- `dodge.state_check`: the actual `CanEnterState(8)` result, with the current combat state. State 8 is dodge; this observes an eligibility check, not a new input request.
+- `dodge.commit`: the actual ability-commit result. A false result records a rejected commit without attempting it again.
+- `dodge.animation`: the direction tag returned by animation selection. It confirms selection was reached, not that a visible animation frame was rendered.
+- `dodge.cancel.pre/post` and `dodge.end_call.pre/post`: explicit native cancellation/end calls, with input and suppression tags before and after. Block and light/heavy attack abilities receive the same commit/end/cancel observations when they call those functions.
+
+These events restore decision details without requiring Blueprint hooks. They do not reproduce every Blueprint activation/end notification or tag callback: cancellation performed entirely in native engine code may bypass the observed Blueprint-callable end/cancel functions. A request with no later decision event is inconclusive; it may have been rejected earlier or omitted by capture limits. No successful activation or complete cancellation history is inferred from a request alone.
+
+The trace is read-only, filters exact ability classes and local player contexts, and uses bounded event/snapshot/output budgets. It does not retry inputs, call eligibility/commit functions to obtain diagnostic results, retain borrowed return structs, scan for objects during events, or add an idle polling worker. Actually unloaded Blueprint functions retain finite retries after relevant construction events. Restart the game after changing the loader profile to check its capabilities again.
 
 Trace output is limited to 2,048 records per save-load capture. Load a save for a new capture. Logging Off disables diagnostic capture and pending trace work without changing parry timing or dodge behavior.

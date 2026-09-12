@@ -31,7 +31,7 @@ return function(log)
     local function live(object)
         return object ~= nil and object:IsValid()
     end
-    -- Only hook parameters are RemoteUnrealParam; never probe UObject.get.
+    -- Unwrap hook parameters (Remote/LocalUnrealParam); never probe UObject.get.
     local function param(value)
         if value == nil then return nil end
         return value:get()
@@ -109,6 +109,9 @@ return function(log)
                     .. " attackTag=" .. read("attackTag", function() return asc:HasMatchingGameplayTag(attackTag) end)
             else text = text .. " ASC=unavailable" end
         end
+        if live(combat) then
+            text = text .. " state=" .. read("state", function() return combat:GetCurrentState() end)
+        end
         record(text)
     end
     local function guarded(label, fn)
@@ -164,11 +167,60 @@ return function(log)
         local class = '/Game/_Dawnwalker/Player/Abilities/Input/GA_Input_Combat' .. name .. 'Attack.GA_Input_Combat' .. name .. 'Attack_C'
         addScope(name, class, {{'K2_ActivateAbility', name .. '.activate'}})
     end
+    -- The native calls made by these graphs still execute without Lua's
+    -- Blueprint dispatcher. Filter by exact class path; no global discovery,
+    -- retained ability instances, guessed fields or extra gameplay calls.
+    local abilityNames = {}
+    for name, scope in pairs(scopes) do abilityNames[scope.class] = name end
+    local function booleanResult(value)
+        local result = param(value)
+        assert(type(result) == 'boolean', 'Native hook result is not a boolean')
+        return tostring(result)
+    end
+    local function nativeAbilityEvent(action, result)
+        return guarded('ability.' .. action, function(context, value)
+            local ability = param(context)
+            if not live(ability) then return end
+            local class = ability:GetClass()
+            if not live(class) then return end
+            local name = abilityNames[class:GetFullName():match('^[^ ]+ (.+)$')]
+            if not name then return end
+            local player = ability:GetAvatarActorFromActorInfo()
+            if not live(player) then return end
+            local combat = live(combatClass) and player:GetComponentByClass(combatClass) or nil
+            local detail = result and (' result=' .. booleanResult(value)) or ''
+            snapshot(name .. '.' .. action, combat, player, ability, detail)
+        end)
+    end
+    -- On this host a native post hook receives (context, original result,
+    -- inputs...). Never re-run CanEnterState or CommitAbility to infer a result.
+    local stateResult = guarded('dodge.state_check', function(context, result, requested)
+        if param(requested) ~= 8 then return end
+        local combat = param(context)
+        if not live(combat) then return end
+        snapshot('dodge.state_check', combat, combat:GetCharacter(), nil,
+            ' target=8 result=' .. booleanResult(result))
+    end)
+    local animationResult = guarded('dodge.animation', function(context, result)
+        local combat = param(context)
+        if not live(combat) then return end
+        local player = combat:GetCharacter()
+        if not live(player) or not player:IsPlayerControlled() or not player:IsLocallyControlled() then return end
+        -- FGameplayTag is borrowed from the call. Copy only its name now.
+        local direction = read('dodge.direction', function() return param(result).TagName:ToString() end)
+        snapshot('dodge.animation', combat, player, nil, ' direction=' .. direction)
+    end)
+    local function noop() end
     local natives = {
         {'/Script/DogwoodCombat.CombatComponentBase:SetDesiredBlockState', 'guard.set', true},
         {'/Script/DogwoodCombat.CombatComponentBase:TryActivateDodgeAbility', 'dodge.request'},
         {'/Script/DogwoodCombat.PlayerCombatComponent:TryQueueComboAttack', 'attack.combo'},
         {'/Script/DogwoodCombat.PlayerCombatComponent:QueueAttack', 'attack.queue'},
+        {'/Script/DogwoodCombat.CombatComponentBase:CanEnterState', pre=noop, post=stateResult},
+        {'/Script/DogwoodCombat.CombatComponentBase:PlayDodgeAnimation', pre=noop, post=animationResult},
+        {'/Script/GameplayAbilities.GameplayAbility:K2_CommitAbility', pre=noop, post=nativeAbilityEvent('commit', true)},
+        {'/Script/GameplayAbilities.GameplayAbility:K2_CancelAbility', pre=nativeAbilityEvent('cancel.pre'), post=nativeAbilityEvent('cancel.post')},
+        {'/Script/GameplayAbilities.GameplayAbility:K2_EndAbility', pre=nativeAbilityEvent('end_call.pre'), post=nativeAbilityEvent('end_call.post')},
     }
     local function missingBlueprintDispatcher(message)
         if not message:find("Was unable to register a hook with Lua function 'RegisterHook'", 1, true) then return false end
@@ -183,6 +235,8 @@ return function(log)
             -- Emit this once directly: a save load can cancel queued output.
             log('GuardTrace BLUEPRINT_UNAVAILABLE standard Lua dispatcher is unavailable; '
                 .. 'Blueprint tracing disabled until mod restart. Native tracing remains enabled. '
+                .. 'Native state-check, commit, animation and explicit end/cancel diagnostics replace the missing decision detail; '
+                .. 'Blueprint-only lifecycle and tag callbacks remain unavailable. '
                 .. 'First path=%s\n%s', runtime.path, runtime.reason)
             runtime.reported = true
         end
@@ -239,7 +293,9 @@ return function(log)
             end
             if nativeIndex <= #natives then
                 local spec = natives[nativeIndex]; nativeIndex = nativeIndex + 1
-                local ok, err = register(spec[1], combatEvent(spec[2] .. '.pre', spec[3]), combatEvent(spec[2] .. '.post', spec[3]))
+                local pre = spec.pre or combatEvent(spec[2] .. '.pre', spec[3])
+                local post = spec.post or combatEvent(spec[2] .. '.post', spec[3])
+                local ok, err = register(spec[1], pre, post)
                 if not ok then record('HOOK_UNAVAILABLE ' .. spec[1] .. ' ' .. tostring(err)) end
                 return false
             end
@@ -287,7 +343,7 @@ return function(log)
     end
     -- Native setup is needed even when an earlier session disabled Blueprint tracing.
     wake()
-    log('GuardTrace enabled: read-only trace GT3; native transition snapshots, raw LT and input tags. Limit 2048 records per save-load capture; controlled by Logging (debugLogging).')
+    log('GuardTrace enabled: read-only trace GT4; native state-check/commit results, animation selection, end/cancel calls, combat state, raw LT and input tags. Limit 2048 records per save-load capture; controlled by Logging (debugLogging).')
     -- Keep installed hooks dormant while off; their guards return before clocks
     -- or UObject access. Pending one-shots drain without output or rescheduling.
     return function(enabled)

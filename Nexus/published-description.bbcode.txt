@@ -1,0 +1,39 @@
+[size=5][b][color=#E8C88A]Easier Parry and Dodge While Blocking[/color][/b][/size]
+
+More forgiving parries, with native held-guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
+
+[size=4][b][color=#E8C88A]Features[/color][/b][/size]
+
+[list]
+[*]Doubles the parry window by default. Choose any multiplier from 0.1x to 50x; difficulty adjustments are preserved.[/*]
+[*]Held guard resumes after native dodge suppression ends, unless an attack or actual guard release has ended guarding.[/*]
+[*]Personal settings stay separate from the mod and survive updates.[/*]
+[/list]
+Normal dodge eligibility, stamina and animation rules remain in effect. Stock attack/combo transitions can still end guard; a later dodge does not reactivate an ended guard ability. Release and press guard again in that case.
+
+Requires [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/18]UE4SS for Dawnwalker[/url].
+
+[size=4][b][color=#E8C88A]Installation[/color][/b][/size]
+
+[list]
+[*][b][color=#A8D5C2]Vortex:[/color][/b] Install Easier-Parry-and-Dodge-While-Blocking.zip through Vortex, enable it and deploy.
+[*][b][color=#A8D5C2]Manual:[/color][/b] Copy the archive's Dawnwalker folder into ...\steamapps\common\The Blood of Dawnwalker\, preserving the folder structure.
+[/list]
+
+[size=4][b][color=#E8C88A]Settings[/color][/b][/size]
+
+On first launch, the mod creates your personal INI here:
+[code]%LOCALAPPDATA%/Dawnwalker/Saved/Config/EasierParryUE4SS.ini[/code]
+Add the settings you want to override under [General], then restart the game:
+[code][General]
+factor = 2.0[/code]
+Use factor = 1.0 for vanilla parry timing.
+
+UE4SS console shortcuts apply immediately and save your choice:
+[code]easierparry 3
+easierparry off
+easierparry on[/code]
+Use easierparry on/off to enable/disable only the timing multiplier, or easierparry status to check settings. Direct INI edits require a restart.
+
+[url=https://github.com/my-mods/Easier-Parry-UE4SS]Source code on GitHub[/url]
+Created by [b]oOCamilleOo[/b]. Original mod code is licensed under [b]MIT[/b]; modification and redistribution are allowed with attribution and the included license. Underlying game assets remain the property of their respective rights holders.

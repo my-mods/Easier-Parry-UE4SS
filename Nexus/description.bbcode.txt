@@ -1,39 +1,30 @@
-[b]Easier Parry and Dodge While Blocking[/b]
+[size=5][b][color=#E8C88A]Easier Parry and Dodge While Blocking[/color][/b][/size]
 
 Makes parrying more forgiving in *The Blood of Dawnwalker*. Includes native guard recovery after dodging. Attack inputs retain the base game’s guard behavior.
 
-- [b]2× parry timing window[/b] by default, configurable from [b]0.1× to 50×[/b], using the game's difficulty-adjusted baseline.
-- Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base game’s guard behavior.
-- Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
-- [b]Dodge while blocking[/b] can be turned Off in Mod Settings independently of parry timing. It defaults to On; Off blocks the player's dodge ability while block is held.
-- Forward dodges use native state-change and timed completion to restore held guard. Failed or cancelled attempts release their input suppression.
-- Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
-- Parry timing loads menu settings once at startup and reapplies that snapshot after save loading. There is no recurring timing checker.
+[list]
+[*][b][color=#A8D5C2]2× parry timing window[/color][/b] by default, configurable from [b]0.1× to 50×[/b], using the game's difficulty-adjusted baseline.
+[*]Keeps held guard available after a dodge, using the game's native ability lifecycle. Attack inputs retain the base game’s guard behavior.
+[*]Temporarily lowers guard for a dodge and resumes when the game's combat rules allow it. Actual guard release and ability cancellation still end guarding.
+[*][b][color=#A8D5C2]Dodge while blocking[/color][/b] can be turned Off in Mod Settings independently of parry timing. It defaults to On; Off blocks the player's dodge ability while block is held.
+[*]Forward dodges use native state-change and timed completion to restore held guard. Failed or cancelled attempts release their input suppression.
+[*]Native guard handling uses gameplay events. Optional Lua diagnostics observe transitions without changing guard or bindings.
+[*]Parry timing loads menu settings once at startup and reapplies that snapshot after save loading. There is no recurring timing checker.
+[/list]
 
-[b]Installation[/b]
+Requires a Dawnwalker-compatible [b]UE4SS 3.x[/b] installation.
 
-Requires a Dawnwalker-compatible [b]UE4SS 3.x[/b] installation. Import Easier-Parry-and-Dodge-While-Blocking.zip into Vortex, select [b]Root (game folder)[/b], then enable and deploy. Keep one enabled Easier Parry entry.
+[size=4][b][color=#E8C88A]Installation[/color][/b][/size]
 
-The package contains the native dodge asset and the UE4SS timing script. Both are required. Data contains only an installer layout note; the payload uses explicit paths under Dawnwalker.
+[list]
+[*][b][color=#A8D5C2]Vortex:[/color][/b] Install Easier-Parry-and-Dodge-While-Blocking.zip through Vortex, enable it and deploy.
+[*][b][color=#A8D5C2]Manual:[/color][/b] Copy the archive's Dawnwalker folder into ...\steamapps\common\The Blood of Dawnwalker\, preserving the folder structure.
+[/list]
 
-For updates, close the game, disable the old entry and deploy, then replace/reinstall that entry through the installer using [b]Root (game folder)[/b] and deploy again. Reinstalling is necessary when changing from the older UE4SS mod type; redeploying its stored layout alone is insufficient.
-
-Back up your legacy personal INI before replacing an older version. After first use of this version, back up the generated settings.ini beside the mod’s mod_settings.ini before uninstalling or reinstalling. See SETTINGS.md for migration and restoration.
-
-To uninstall, disable/remove the entry in Vortex, deploy and restart the game. Restore your settings backup before launching after a reinstall.
-
-[b]Settings[/b]
+[size=4][b][color=#E8C88A]Settings[/color][/b][/size]
 
 Use [url=https://www.nexusmods.com/thebloodofdawnwalker/mods/271]Mod Setting Menu 1.0.5 or later[/url] from the main menu. Press Apply, then load a save. See SETTINGS.md (included with the mod) for all controls, first-use import and preference backups. Console settings commands are retired.
 
-[b]Compatibility[/b]
-
-Native assets are based on Steam build [b]25129649 / CL-257186[/b]. Updates to these game assets require compatibility review. The mod replaces:
-
-- /Game/_Dawnwalker/Combat/Abilities/Dodge/GA_Dodge
-
-Controller Tweaks and Remap changes different assets and can remain enabled. Other mods replacing the dodge ability or modifying ParryWindowMultiplier may conflict. Do not assume differently named containers avoid asset conflicts; select one implementation of each ability.
-
-The guard correction targets guard held before a dodge. The base game controls attack/combo handoffs and guard cancellation without an overridden guard ability. Dodge retains the game's native attack-interruption, stamina, animation and combat eligibility logic. If a stock attack transition ends guard, dodge completion cannot reactivate it; release and press guard again.
+[size=4][b][color=#E8C88A]Credits and source[/color][/b][/size]
 
 Created by [b]oOCamilleOo[/b]. Original mod code is under the MIT license (included with the mod); underlying game assets remain the property of their respective rights holders. Nexus listing materials are maintained separately in Nexus (included with the mod).

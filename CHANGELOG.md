@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Stop repeated Blueprint diagnostic hook failures when the Lua dispatcher is unavailable, while preserving native combat tracing across save loads.
+
 - Add an independent Dodge while blocking toggle to Mod Settings, enabled by default.
 
 - Restore parry settings after loads with missed loading notifications or delayed player initialization.

@@ -3,6 +3,9 @@ local directory = assert(debug.getinfo(1,'S').source:gsub('^@',''):match('^(.*[/
 local Hooks = dofile(directory .. 'UE4SSCommonHooks.lua')
 return function(log)
     local hooks = Hooks.new({RegisterHook=RegisterHook,UnregisterHook=UnregisterHook})
+    -- main.lua owns this table for the mod lifetime; sessions inherit it.
+    -- Only strings/booleans belong here. A save load cannot repair host dispatch.
+    local runtime = EasierParryGuardTraceState or {}
     local active = true
     local stopped, registered = false, {}
     local queue, head, sequence, dropped = {}, 1, 0, 0
@@ -64,7 +67,7 @@ return function(log)
         if dropped > 0 then message = message .. " dropped=" .. dropped; dropped = 0 end
         queue[#queue + 1] = string.format("#%d t=%.3f %s", sequence, os.clock(), message)
         if total == MAX_RECORDS then
-            queue[#queue] = queue[#queue] .. " TRACE_LIMIT_REACHED restart to capture again"
+            queue[#queue] = queue[#queue] .. " TRACE_LIMIT_REACHED load a save for a new capture"
             stopped = true
         end
         flush()
@@ -167,6 +170,23 @@ return function(log)
         {'/Script/DogwoodCombat.PlayerCombatComponent:TryQueueComboAttack', 'attack.combo'},
         {'/Script/DogwoodCombat.PlayerCombatComponent:QueueAttack', 'attack.queue'},
     }
+    local function missingBlueprintDispatcher(message)
+        if not message:find("Was unable to register a hook with Lua function 'RegisterHook'", 1, true) then return false end
+        local pointer = message:match('UFunction::Func:%s*(0[xX]%x+)')
+        local dispatcher = message:match('ProcessInternal:%s*(0[xX]%x+)')
+        local native = message:match('FUNC_Native:%s*(%d+)')
+        return native == '0' and pointer and not pointer:match('^0[xX]0+$')
+            and dispatcher and dispatcher:match('^0[xX]0+$') ~= nil
+    end
+    local function reportBlueprintUnavailable()
+        if runtime.blueprintUnavailable and not runtime.reported then
+            -- Emit this once directly: a save load can cancel queued output.
+            log('GuardTrace BLUEPRINT_UNAVAILABLE standard Lua dispatcher is unavailable; '
+                .. 'Blueprint tracing disabled until mod restart. Native tracing remains enabled. '
+                .. 'First path=%s\n%s', runtime.path, runtime.reason)
+            runtime.reported = true
+        end
+    end
     local function register(path, pre, post)
         if registered[path] and live(registered[path][3]) then return true end
         local lookupOK, fn = pcall(StaticFindObject, path)
@@ -182,12 +202,16 @@ return function(log)
             record('HOOK_READY ' .. path)
             return true
         end
-        return false, tostring(second)
+        local message = tostring(second)
+        if path:sub(1, 6) == '/Game/' and missingBlueprintDispatcher(message) then
+            runtime.blueprintUnavailable, runtime.path, runtime.reason = true, path, message
+        end
+        return false, message
     end
     local nativeIndex = 1
     local function schedule(name, reset)
         local scope = scopes[name]
-        if not active or stopped or scope.queued then return end
+        if not active or stopped or runtime.blueprintUnavailable or scope.queued then return end
         if reset then scope.attempts, scope.next, scope.done = 0, 1, false end
         if scope.done then return end
         if scope.attempts >= 2 then return end
@@ -219,6 +243,13 @@ return function(log)
                 if not ok then record('HOOK_UNAVAILABLE ' .. spec[1] .. ' ' .. tostring(err)) end
                 return false
             end
+            if runtime.blueprintUnavailable then
+                jobs = {}
+                for _, scope in pairs(scopes) do scope.queued = false end
+                reportBlueprintUnavailable()
+                installing = false
+                return true
+            end
             local name = jobs[1]
             if name then
                 local scope = scopes[name]
@@ -227,7 +258,7 @@ return function(log)
                 if ok then
                     scope.next = scope.next + 1
                     if scope.next > #scope.paths then scope.done = true end
-                else
+                elseif not runtime.blueprintUnavailable then
                     scope.attempts = scope.attempts + 1
                     if scope.attempts >= 2 then record('HOOK_PENDING_CLASS ' .. scope.class .. ':' .. spec[1] .. ' ' .. tostring(err)) end
                 end
@@ -243,16 +274,20 @@ return function(log)
         or type(NotifyOnNewObject) ~= 'function' then
         log('GuardTrace unavailable: this UE4SS build lacks required event APIs.'); return
     end
-    for name, scope in pairs(scopes) do
-        local scopeName = name
-        local ok, err = pcall(NotifyOnNewObject, scope.class, function()
-            -- Construction notifications only enqueue setup. No UObject reads here.
-            schedule(scopeName, true)
-        end)
-        if not ok then record('NOTIFY_UNAVAILABLE ' .. scope.class .. ' ' .. tostring(err)) end
-        schedule(name, false)
+    if not runtime.blueprintUnavailable then
+        for name, scope in pairs(scopes) do
+            local scopeName = name
+            local ok, err = pcall(NotifyOnNewObject, scope.class, function()
+                -- Construction notifications only enqueue setup. No UObject reads here.
+                schedule(scopeName, true)
+            end)
+            if not ok then record('NOTIFY_UNAVAILABLE ' .. scope.class .. ' ' .. tostring(err)) end
+            schedule(name, false)
+        end
     end
-    log('GuardTrace enabled: read-only trace GT2; native transition snapshots, raw LT and input tags. Limit 2048 records; controlled by debugLogging and easierparry debug on/off.')
+    -- Native setup is needed even when an earlier session disabled Blueprint tracing.
+    wake()
+    log('GuardTrace enabled: read-only trace GT3; native transition snapshots, raw LT and input tags. Limit 2048 records per save-load capture; controlled by Logging (debugLogging).')
     -- Keep installed hooks dormant while off; their guards return before clocks
     -- or UObject access. Pending one-shots drain without output or rescheduling.
     return function(enabled)

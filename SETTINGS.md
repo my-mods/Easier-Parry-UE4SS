@@ -2,7 +2,7 @@
 
 Install [Mod Setting Menu 1.0.5 or later](https://www.nexusmods.com/thebloodofdawnwalker/mods/271) and UE4SS through Vortex. On first use, load a save once to initialize the settings file, then return to Main Menu > Mod Settings > All Mods. Select this mod, change settings and press Apply. **Load a save after Apply.** Restore discards unapplied changes; Reset selects this mod’s defaults.
 
-The stable menu ID is `oOCamilleOo_EasierParryAndDodgeWhileBlocking`. The mod generates `settings.ini` beside `mod_settings.ini` in its UE4SS mod folder. This generated file is the authoritative settings store and is not shipped in the ZIP. Existing supported preferences are imported on first use. After the new settings are saved and verified, the successfully imported legacy files are deleted if their contents are unchanged. Migration or save failures retain the originals. Cleanup failures are logged and do not prevent using the new settings. Files left by an earlier migration are not deleted automatically. Back up `settings.ini` before removing/reinstalling the mod or moving its folder. Restore that backup into the same runtime folder before launching. Do not restore an old INI over it.
+The stable menu ID is `oOCamilleOo_EasierParryAndDodgeWhileBlocking`. The mod generates `settings.ini` beside `mod_settings.ini` in its UE4SS folder. That file stores the active preferences and is not shipped in the archive. Supported legacy preferences are imported on first use.
 
 Missing, duplicate or invalid settings stop configuration loading and are reported in `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`. Preserve the file before correcting it. If a menu save fails, preserve its temporary/backup files and follow the menu’s recovery instructions. Settings are read only when a save loads. Waiting at the main menu performs no settings work; travel and possession events use the current snapshot. Settings are never polled. `debugLogging` controls additional diagnostic logging; it defaults to Off.
 
@@ -19,14 +19,14 @@ Missing, duplicate or invalid settings stop configuration loading and are report
 
 Reset restores the 200% default. For manual INI edits, `parryWindowPercent` accepts values from 10 to 5000. Gameplay accepts values between the menu choices; opening the menu page requires one of the listed values.
 
-When upgrading from multiplier settings, load a save once before opening this page. Existing multipliers are converted to percentages without changing the window. Values between the menu choices retain their precision. The original menu settings are retained as `settings.ini.before-percentages`, including unrelated text and comments. If conversion fails, keep the original and any `.before-percentages.new` transaction file for recovery. No settings file is replaced with defaults during this conversion.
-
 **Dodge while blocking:** On keeps the mod's dodge and guard recovery behavior. Off blocks the player's dodge ability while the block input is held. Release block to dodge. This control remains available when Parry timing adjustment is Off. Press Apply, then load a save. It uses the game's native ability activation check; it does not poll inputs or settings.
-
-When upgrading existing menu settings, the first save load adds `dodgeWhileBlocking = 1` while preserving saved preferences and unrelated text. The original file is retained as `settings.ini.before-dodge-setting`. If this upgrade fails, preserve that backup and any `.before-dodge-setting.new` transaction file for recovery. Older timing multiplier conversion still keeps its separate `.before-percentages` backup.
 
 Console commands are not used to change settings.
 
 Conditional rows and groups show relevant controls as you edit. Hidden options keep their saved values; hiding an option does not reset it. The interface uses toggles and labeled percentage choices; the numeric representation in settings.ini is an implementation detail.
 
 **Logging** is the final menu setting and the only diagnostic control. Leave it Off for normal play; On writes troubleshooting details to `Dawnwalker/Binaries/Win64/ue4ss/UE4SS.log`.
+
+When standard Lua Blueprint hooks are unavailable, GuardTrace records the first dispatcher error once per mod launch and stops those registration attempts. Native guard, dodge-request, attack-queue and combo tracing remain enabled across save loads. Actually unloaded functions retain finite retries after relevant construction events. Restart the game after changing the loader profile to check its capabilities again.
+
+Trace output is limited to 2,048 records per save-load capture. Load a save for a new capture. Logging Off disables diagnostic capture and pending trace work without changing parry timing or dodge behavior.
